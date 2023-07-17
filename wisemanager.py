@@ -95,16 +95,4 @@ class Wise():
         else:
             print("Botão não encontrado.")
 
-            
-        
-    def funcao_main(self):
-        self.login()
-        time.sleep(3)
-        self.get_pdf_file()
-        time.sleep(4)
-        self.confirm()
 
-
-
-# wise = Wise()
-# wise.funcao_main()
