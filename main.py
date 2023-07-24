@@ -3,7 +3,7 @@ from pywinauto import Application
 from pywinauto.findwindows import ElementNotFoundError
 import database
 import pyautogui
-from wise_test import Wise
+from wisemanager import Wise
 import pdfplumber
 import re
 
