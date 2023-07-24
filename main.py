@@ -1,14 +1,11 @@
 import time
 from pywinauto import Application
 from pywinauto.findwindows import ElementNotFoundError
-from pywinauto.keyboard import SendKeys
 import database
 import pyautogui
-from wisemanager import Wise
+from wise_test import Wise
 import pdfplumber
-# import tratamento_dados
-
-
+import re
 
 class NbsRpa():
 
@@ -106,7 +103,7 @@ class NbsRpa():
         button_image_path = r"C:\Users\user\Pictures\Captura.PNG"
         self.click_specific_button(button_image_path)
 
-    def janela_cadastro_nf(self, cpf_cnpj_value, num_nf_value, serie_value, data_emissao_value, tipo_docto_value, valor_value, contab_descricao_value, total_parcelas_value, tipo_pagamento_value, natureza_financeira_value):
+    def janela_cadastro_nf(self, cpf_cnpj_value, num_nf_value, serie_value, data_emissao_value, tipo_docto_value, valor_value, contab_descricao_value, total_parcelas_value, tipo_pagamento_value, natureza_financeira_value, numeroos, terceiro, estado):
         try:
             app = Application(backend='uia').connect(title="Entrada Diversas / Operação: 52-Entrada Diversas")
         except ElementNotFoundError:
@@ -138,7 +135,7 @@ class NbsRpa():
         cpf_cnpj.type_keys("{ENTER}")
         esp.click_input()
         esp.type_keys(tipo_docto_value)
-        num_nf.type_keys(num_nf_value)
+        num_nf.type_keys(num_nf_value) # adicionar depois
         sr.type_keys(serie_value)
         # data_emissao.type_keys(data_emissao_value) Adicionar depois
         vlr_nf.type_keys(valor_value)
@@ -159,23 +156,50 @@ class NbsRpa():
         tipo_pagamento.click_input()
         pyautogui.typewrite(tipo_pagamento_value)
         pyautogui.press('tab')
-        # tipo_pagamento.click_input()
-        # for _ in range(2):
-        #     pyautogui.press('down')
-        #     time.sleep(0.1)
-        # pyautogui.press('enter')
-        # natureza_despesa.click_input()
-        # for _ in range(5):
-        #     pyautogui.press('down')
-        # pyautogui.press('enter')
         natureza_despesa.click_input()
         time.sleep(1)
         pyautogui.typewrite(natureza_financeira_value)
         time.sleep(1)
         pyautogui.press('tab')
+        print(terceiro)
+        if terceiro == 'S':
+            self.janela_se_terceiro(numeroos)
+        time.sleep(2)
         submit_button.click_input()
+        if estado != 'SC':
+            pyautogui.press('tab')
+            pyautogui.press('enter')
         time.sleep(1)
         pyautogui.press('enter')
+
+    def janela_se_terceiro(self, numeroos):
+        try:
+            app = Application(backend='uia').connect(title="Entrada Diversas / Operação: 52-Entrada Diversas")
+        except ElementNotFoundError:
+            print("Não foi possível se conectar com a janela de cadastro de nf")
+            return 
+        janela = app['Entrada Diversas / Operação: 52-Entrada Diversas'] 
+        relacao_os = janela.child_window(control_type="TabItem", found_index=3)
+        cadeado = r"C:\Users\user\Pictures\Cadeado.PNG"
+        pesquisa_os = r"C:\Users\user\Pictures\ProcurarOS.PNG"
+        numero_os = janela.child_window(class_name="TOvcNumericField", found_index=0)
+        if numeroos != '':
+            relacao_os.click_input()
+            time.sleep(1)
+            numero_os.click_input()
+            time.sleep(1)
+            pyautogui.typewrite(numeroos)
+            time.sleep(1)
+            self.click_specific_button(pesquisa_os)
+        else:
+            relacao_os.click_input()
+            time.sleep(2)
+            self.click_specific_button(cadeado)
+            time.sleep(0.2)
+            pyautogui.press('tab')
+            time.sleep(0.2)
+            pyautogui.press('enter')
+
 
     def janela_imprimir_nota(self):
         try:
@@ -214,7 +238,7 @@ class NbsRpa():
         time.sleep(1)
         pyautogui.press('s')
 
-    def save_as(self, solicitacao_gasto):
+    def save_as(self, num_docto):
         try:
             app = Application(backend='uia').connect(title="Salvar como")
         except ElementNotFoundError:
@@ -226,7 +250,7 @@ class NbsRpa():
         file_name = janela.child_window(class_name="Edit")
         file_type = janela.child_window(class_name="AppControlHost", found_index=1)
         # Set Comands
-        file_name.type_keys(f"AP_{solicitacao_gasto}")
+        file_name.type_keys(f"AP_{num_docto}")
         pyautogui.press('tab')
         file_type.click_input()
         for _ in range(2):
@@ -236,7 +260,7 @@ class NbsRpa():
         for _ in range(2):
             pyautogui.press('enter')
             time.sleep(1)
-        time.sleep(1)
+        time.sleep(3)
         pyautogui.hotkey('ctrl', 'w')
 
     def click_specific_button(self, button_image_path):
@@ -250,7 +274,6 @@ class NbsRpa():
         else:
             print("Botão não encontrado.")
 
-    
     def close_extract_pdf_window(self):
         try:
             app = Application(backend='uia').connect(title="Ace Viewer")
@@ -263,40 +286,56 @@ class NbsRpa():
         fechar = janela.child_window(title="Fechar")
         fechar.click_input()
 
-    def close_aplications_by_cancel_icon(self):
-        cancel_pag = r"C:\Users\user\Pictures\Cancel_Pag.PNG"
+    def close_aplications_half(self):
+        cancel_pag = r"C:\Users\user\Pictures\CancelarMac.PNG"
         janela_anterior_nbs_entrada = r"C:\Users\user\Pictures\Janela_Anterior_NBS.PNG"
-        janela_anterior_sistema_financeiro = r"C:\Users\user\Pictures\Janela_Anterior_Sis_Financ.PNG"
         self.click_specific_button(cancel_pag)
         time.sleep(2)
         self.click_specific_button(janela_anterior_nbs_entrada)
-        time.sleep(2)
+
+    def close_aplications_end(self):
+        janela_anterior_sistema_financeiro = r"C:\Users\user\Pictures\Janela_Anterior_Sis_Financ.PNG"
         self.click_specific_button(janela_anterior_sistema_financeiro)
 
-    def get_controle_pdf(self, solicitacao_gasto):
-        caminho_pdf = rf"C:\Users\user\Documents\AP_{solicitacao_gasto}.pdf"
+    def get_controle_pdf(self, num_docto):
+        caminho_pdf = rf"C:\Users\user\Documents\AP_{num_docto}.pdf"
         with pdfplumber.open(caminho_pdf) as pdf:
-            primeira_pagina = pdf.pages[0]  
+            primeira_pagina = pdf.pages[0]
             texto = primeira_pagina.extract_text() 
         palavras = texto.split()
-        indices_controle = [i for i, palavra in enumerate(palavras) if palavra == 'Controle']
-        if len(indices_controle) < 2:
-            print("Não foram encontradas duas ocorrências de 'Controle'.")
-        else:
-            valor_controle = palavras[indices_controle[1] + 1]
-            valor_controle = valor_controle.replace("-", "")
-        return valor_controle
+        formato_especifico = re.compile(r'^\d{1,2}-\d+-\d$')
+        for palavra in palavras:
+            if formato_especifico.match(palavra):
+                partes = palavra.split('-')
+                return partes[1]  
+        return None
     
+    def back_to_nbs(self):
+        try:
+            app = Application(backend='uia').connect(title="Barra de Tarefas")
+        except ElementNotFoundError:
+            print("Não foi possível se conectar com a janela Barra de Tarefas")
+            return 
+        janela = app['Barra de Tarefas']
+        minimizar_google = janela.child_window(title="Google Chrome - 1 executando o windows")
+        minimizar_google.click_input()
 
     def funcao_main(self):
         registros = database.consultar_dados_cadastro()
+        empresa_anterior = None
         for row in registros:
-            self.open_application()
-            time.sleep(3)
-            self.login()
+            empresa_atual = row[2]
+            if empresa_atual != empresa_anterior:
+                self.close_aplications_end()
+                time.sleep(3)
+                self.open_application()
+                time.sleep(3)
+                self.login()
+                time.sleep(5)
+                self.janela_empresa_filial(row[2], row[3])
             time.sleep(5)
-            self.janela_empresa_filial(row[2], row[3])
-            time.sleep(5)
+            empresa_anterior = empresa_atual
+            print(empresa_anterior, empresa_atual)
             self.access_contas_a_pagar()
             time.sleep(5)
             self.janela_entrada() 
@@ -314,27 +353,36 @@ class NbsRpa():
                 data_emissao_value = notas_fiscais[0][1] 
                 tipo_docto_value = notas_fiscais[0][5]
                 valor_value = notas_fiscais[0][0]
-            self.janela_cadastro_nf(cnpj, numerodocto, serie_value, data_emissao_value, tipo_docto_value, valor_value, contab_descricao_value, total_parcelas_value, tipo_pagamento_value, natureza_financeira_value)
-            time.sleep(7)
+            numeroos = row[11]
+            terceiro = row[12]
+            estado = row[13]
+            self.janela_cadastro_nf(cnpj, numerodocto, serie_value, data_emissao_value, tipo_docto_value, valor_value, contab_descricao_value, total_parcelas_value, tipo_pagamento_value, natureza_financeira_value, numeroos, terceiro, estado)
+            time.sleep(10)
             self.janela_imprimir_nota()
             time.sleep(5)
             self.janela_secundario_imprimir_nota()
             time.sleep(5)
             self.extract_pdf()
             time.sleep(5)
-            self.save_as(id_solicitacao)
-            time.sleep(3)
+            self.save_as(numerodocto)
+            time.sleep(5)
+            num_controle = self.get_controle_pdf(numerodocto)
+            print(num_controle)
             wise_instance = Wise()
-            num_controle = self.get_controle_pdf(id_solicitacao)
             time.sleep(3)
-            wise_instance.login(id_solicitacao, num_controle)
+            wise_instance.Anexar_AP(id_solicitacao, num_controle, numerodocto)
             time.sleep(3)
-            wise_instance.get_pdf_file(id_solicitacao)
+            wise_instance.get_pdf_file(numerodocto)
             time.sleep(4)
             wise_instance.confirm()
-            # self.close_extract_pdf_window()
-            # time.sleep(2)
-            # self.close_aplications_by_cancel_icon()
+            time.sleep(3)
+            database.atualizar_anexosolicitacaogasto(numerodocto)
+            time.sleep(2)
+            self.back_to_nbs()
+            self.close_extract_pdf_window()
+            time.sleep(2)
+            self.close_aplications_half()
+            time.sleep(3)
 
 rpa = NbsRpa()
 rpa.funcao_main()
