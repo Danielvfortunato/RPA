@@ -61,7 +61,8 @@ def consultar_dados_cadastro():
                 AND autorizaRpa = 'S'
                 AND a.notacaptadarpa = 'N'
             ORDER BY
-				ep.empresa
+		ep.empresa
+  		, sg.id
         """
         cursor.execute(consulta)
         resultados = cursor.fetchall()
