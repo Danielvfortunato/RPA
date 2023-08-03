@@ -35,6 +35,9 @@ def consultar_dados_cadastro():
                 , sg.numeroOs
                 , cl.terceiro
                 , cl.estado
+                , sg.usarateiocentrocusto 
+                , sg.valor as valorSg
+                , sg.idrateiocc 
             FROM 
                 solicitacaoGasto sg
                 , cliente cl
@@ -45,7 +48,6 @@ def consultar_dados_cadastro():
             WHERE 
                 sg.aprovado = 'S'
                 AND sg.enviaefetivacao = 'S'
-                -- AND sg.id = 135230
                 AND sg.efetivado = 'N'
                 AND cl.id = sg.idFornecedor
                 and sg.id = a.idsolicitacaogasto
@@ -54,15 +56,14 @@ def consultar_dados_cadastro():
                 AND ep.id = sg.idEmpresa
                 AND ep.idsegmento = 2
                 AND sg.formapagamento <> 'Caixa Usado'
-                AND sg.formapagamento  = 'B'
+--                AND sg.formapagamento  = 'B'
                 AND rc.id = sg.idcontabilizacaopadrao 
                 AND nf.id = sg.idNaturezaFinanceira
-                AND (select count(*) from anexosolicitacaogasto where idsolicitacaogasto = sg.id and dataemissaonota is null) > 0
                 AND autorizaRpa = 'S'
                 AND a.notacaptadarpa = 'N'
             ORDER BY
-		ep.empresa
-  		, sg.id
+                ep.empresa
+                , sg.id
         """
         cursor.execute(consulta)
         resultados = cursor.fetchall()
@@ -119,5 +120,47 @@ def atualizar_anexosolicitacaogasto(numerodocto):
         conn.close()
         print("Atualização realizada com sucesso.")
 
-    
+def consultar_rateio(id_solicitacao):
+    conn = conectar_banco_dados()
 
+    if conn is not None:
+        cursor = conn.cursor()
+        query = """
+            SELECT
+                ccs.chavesistema centroCusto
+                , sum(cr.valor) Valor
+            FROM 
+                centroscustorateadosolicitacaogasto cr,centrocustoshadow ccs
+            WHERE
+                cr.idsolicitacaogasto = %s
+                AND ccs.id = cr.idcentrocustoshadow
+            GROUP BY 
+                ccs.chavesistema
+        """
+        cursor.execute(query, (id_solicitacao,))
+        resultados = cursor.fetchall()
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return resultados
+
+def consultar_rateio_aut(id_rateiocc):
+    conn = conectar_banco_dados()
+
+    if conn is not None:
+        cursor = conn.cursor()
+        query = """
+            SELECT 
+                idcentrocustoshadow 
+                , percentual
+            FROM 
+                rateiocentrocusto 
+            WHERE 
+                idrateiocc = %s
+        """
+        cursor.execute(query, (id_rateiocc,))
+        resultados = cursor.fetchall()
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return resultados    
