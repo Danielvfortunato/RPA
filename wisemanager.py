@@ -8,6 +8,7 @@ from pywinauto import Application
 from pywinauto.findwindows import ElementNotFoundError
 import pyautogui
 from selenium.webdriver.support.select import Select
+from selenium.webdriver.chrome.service import Service
 
 class Wise():
     def __init__(self):
@@ -22,7 +23,7 @@ class Wise():
                 return
         try:
             subprocess.Popen([
-                "C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+                "C:\Program Files\Google\Chrome\Application\chrome.exe",
                 "--remote-debugging-port=9222",
                 "--user-data-dir=C:/Selenium/AutomationProfile"
             ])
@@ -48,8 +49,9 @@ class Wise():
         chrome_options.add_argument("--start-maximized")
         chrome_options.add_experimental_option("debuggerAddress", "127.0.0.1:9222")
         if not self.driver:
-            chrome_driver = "C:\chromedriver.exe"
-            self.driver = webdriver.Chrome(executable_path=chrome_driver, options=chrome_options)
+            service = Service(executable_path='./chromedriver.exe')
+            # chrome_driver = "C:\chromedriver.exe"
+            self.driver = webdriver.Chrome(service=service, options=chrome_options)
         return self.driver
 
     def login(self):
@@ -99,9 +101,10 @@ class Wise():
             print("Falha ao conectar com página pegar pdf")
             return 
         janela = app['WiseManager - Google Chrome']
-        get_document = janela.child_window(title="Documentos", found_index=0)
+        get_document = janela.child_window(title="APs (fixo)")
         file_name = janela.child_window(class_name="Edit")
         get_document.click_input()
+        time.sleep(2)
         file_name.type_keys(f"AP_{numero_docto}.PDF")
         file_name.type_keys("{ENTER}")
 
@@ -113,7 +116,7 @@ class Wise():
             if todos_preenchidos:
                 botao_confirmar = self.driver.find_element(By.XPATH, "//button[contains(@title, 'Confirma Lançamento no ERP')]")
                 botao_confirmar.click()
-                confirmar = r"C:\Users\user\Pictures\ConfirmarMac2.PNG"
+                confirmar = r"C:\Users\user\Documents\RPA_Project\imagens\Confirmar.PNG"
                 time.sleep(4)
                 self.click_specific_button_wise(confirmar)
                 time.sleep(3)
@@ -133,5 +136,5 @@ class Wise():
 
 # wise = Wise()
 # wise.Anexar_AP('135167', '0000', '10783')
-# wise.get_pdf_file('136042')
+# wise.get_pdf_file('9183')
 # wise.confirm()
