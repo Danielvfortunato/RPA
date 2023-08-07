@@ -483,6 +483,8 @@ class NbsRpa():
                 self.remote_login()
                 time.sleep(5)
                 self.login()
+                time.sleep(4)
+                self.initial_page()
                 time.sleep(7)
                 self.janela_empresa_filial(row[2], row[3])
             time.sleep(5)
