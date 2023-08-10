@@ -9,6 +9,7 @@ from pywinauto.findwindows import ElementNotFoundError
 import pyautogui
 from selenium.webdriver.support.select import Select
 from selenium.webdriver.chrome.service import Service
+import os
 
 class Wise():
     def __init__(self):
@@ -49,15 +50,16 @@ class Wise():
         chrome_options.add_argument("--start-maximized")
         chrome_options.add_experimental_option("debuggerAddress", "127.0.0.1:9222")
         if not self.driver:
-            service = Service(executable_path='./chromedriver.exe')
-            # chrome_driver = "C:\chromedriver.exe"
-            self.driver = webdriver.Chrome(service=service, options=chrome_options)
+            # service = Service(executable_path='./chromedriver.exe')
+            self.driver = webdriver.Chrome(options=chrome_options)
+            self.driver.maximize_window()
+
         return self.driver
 
     def login(self):
             username_field = self.driver.find_element(By.NAME, "j_username")
             password_field = self.driver.find_element(By.NAME, "j_password")
-            username_field.send_keys('Daniel')
+            username_field.send_keys('rpa')
             password_field.send_keys('Da131800!')
             password_field.submit()
 
@@ -65,10 +67,10 @@ class Wise():
         self.start_chrome_debugger()
         self.init_instance_chrome()
         time.sleep(2)
-        self.driver.get("https://demow.wisemanager.com.br/WiseManagerBI/#/financeiro/efetivacaoSolicitacaoGastoNew")
+        self.driver.get("https://gera.wisemanager.com.br/WiseManagerBI/#/financeiro/efetivacaoSolicitacaoGastoNew")
         if self.driver.find_elements(By.NAME, "j_username") and self.driver.find_elements(By.NAME, "j_password"):
             self.login()
-            time.sleep(20)
+            time.sleep(10)
         select_element = self.driver.find_element(By.CSS_SELECTOR, 'select.form-control.input-sm[ng-model="filtro.campo"]')
         select = Select(select_element)
         select.select_by_value('id')
@@ -88,8 +90,6 @@ class Wise():
             valor_docto = numero_docto.get_attribute('value')
             if valor_docto == num_docto:
                 controle.send_keys(num_controle)
-        # controle = self.driver.find_element(By.NAME, "numeroControle")
-        # controle.send_keys(num_controle)
         time.sleep(3)
         file_input = self.driver.find_element(By.XPATH, "//input[@class='file-input']")
         self.driver.execute_script("arguments[0].click();", file_input)
@@ -101,21 +101,29 @@ class Wise():
             print("Falha ao conectar com página pegar pdf")
             return 
         janela = app['WiseManager - Google Chrome']
-        get_document = janela.child_window(title="APs (fixo)")
+        try:
+            get_document = janela.child_window(title="APs (fixo)", found_index=0)
+            get_document.click_input()
+        except:
+            pass
+        
         file_name = janela.child_window(class_name="Edit")
-        get_document.click_input()
         time.sleep(2)
         file_name.type_keys(f"AP_{numero_docto}.PDF")
         file_name.type_keys("{ENTER}")
 
     def confirm(self):
-        url_esperada = "https://demow.wisemanager.com.br/WiseManagerBI/#/financeiro/efetivacaoSolicitacaoGastoNew"
+        url_esperada = "https://gera.wisemanager.com.br/WiseManagerBI/#/financeiro/efetivacaoSolicitacaoGastoNew"
         if self.driver.current_url == url_esperada:
             controles = self.driver.find_elements(By.NAME, "numeroControle")
             todos_preenchidos = all(controle.get_attribute('value') != "" for controle in controles if controle.is_displayed())
             if todos_preenchidos:
                 botao_confirmar = self.driver.find_element(By.XPATH, "//button[contains(@title, 'Confirma Lançamento no ERP')]")
+                time.sleep(3)
+                pyautogui.scroll(1000)
+                time.sleep(2)
                 botao_confirmar.click()
+                time.sleep(2)
                 confirmar = r"C:\Users\user\Documents\RPA_Project\imagens\Confirmar.PNG"
                 time.sleep(4)
                 self.click_specific_button_wise(confirmar)
@@ -123,8 +131,8 @@ class Wise():
             else:
                 print("Nem todos os controles estão preenchidos. Não foi possível confirmar.")
             
-    def click_specific_button_wise(self, button_image_path):
-        button_location = pyautogui.locateOnScreen(button_image_path)
+    def click_specific_button_wise(self, button_image_path, confidence_level=0.8):
+        button_location = pyautogui.locateOnScreen(button_image_path, confidence=confidence_level)
         if button_location:
             button_x, button_y, button_width, button_height = button_location
             button_center_x = button_x + button_width // 2
@@ -134,7 +142,6 @@ class Wise():
         else:
             print("Botão não encontrado.")
 
+
 # wise = Wise()
-# wise.Anexar_AP('135167', '0000', '10783')
-# wise.get_pdf_file('9183')
-# wise.confirm()
+# wise.Anexar_AP(123, 123, 123)
