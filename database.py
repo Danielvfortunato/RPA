@@ -3,7 +3,7 @@ import psycopg2
 def conectar_banco_dados():
     try:
         conn = psycopg2.connect(
-            host="179.124.193.185",
+            host="179.124.193.130",
             port=5432,
             user="userwisemanager",
             password="pwdwisemanager",
@@ -38,6 +38,7 @@ def consultar_dados_cadastro():
                 , sg.usarateiocentrocusto 
                 , sg.valor as valorSg
                 , sg.idrateiocc 
+                , sg.historico
             FROM 
                 solicitacaoGasto sg
                 , cliente cl
@@ -54,13 +55,13 @@ def consultar_dados_cadastro():
                 AND a.desconsiderAranexo = 'N'
                 AND (a.tipo = 'DANFE' OR a.tipo = 'DANFE-ADTO')
                 AND ep.id = sg.idEmpresa
-                AND ep.idsegmento = 2
+                -- AND ep.idsegmento = 2
                 AND sg.formapagamento <> 'Caixa Usado'
 --                AND sg.formapagamento  = 'B'
                 AND rc.id = sg.idcontabilizacaopadrao 
                 AND nf.id = sg.idNaturezaFinanceira
                 AND autorizaRpa = 'S'
-                AND a.notacaptadarpa = 'N'
+                AND (a.notacaptadarpa = 'N' or a.notacaptadarpa is null)
             ORDER BY
                 ep.empresa
                 , sg.id
@@ -78,19 +79,23 @@ def consultar_nota_fiscal(id_solicitacao):
         cursor = conn.cursor()
         consulta = """ 
             SELECT 
-                TO_CHAR(valor, 'FM999999999D99') as valor,
-                TO_CHAR(date(dataemissaonota), 'DD-MM-YYYY') as dataemissaonota,
-                numerodocto,
-                serie,
-                datavencimento,
-                tipodoctonota
+                TO_CHAR(valor, 'FM999999999D99') as valor
+                , TO_CHAR(date(dataemissaonota), 'DD-MM-YYYY') as dataemissaonota
+                , numerodocto
+                , serie
+                , replace(TO_CHAR(date(datavencimento), 'DD-MM-YYYY'), '-','') as datavencimento
+                , tipodoctonota
+                , valorretinss as inss 
+                , valorretir as ir 
+                , valorretpiscofinscsl as piscofinscsl
+                , valorretiss as iss 
             FROM 
                 anexoSolicitacaoGasto
             WHERE 
                 idSolicitacaoGasto = %s
                 AND desconsiderAranexo = 'N'
                 AND (tipo = 'DANFE' OR tipo = 'DANFE-ADTO')
-                and notacaptadarpa = 'N'
+                AND (notacaptadarpa = 'N' or notacaptadarpa is null)
             """
         cursor.execute(consulta, (id_solicitacao,))
         resultados = cursor.fetchall()
