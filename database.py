@@ -80,7 +80,7 @@ def consultar_nota_fiscal(id_solicitacao):
         consulta = """ 
             SELECT 
                 TO_CHAR(valor, 'FM999999999D99') as valor
-                , TO_CHAR(date(dataemissaonota), 'DD-MM-YYYY') as dataemissaonota
+                , replace(TO_CHAR(date(dataemissaonota), 'DD-MM-YYYY'), '-', '') as dataemissaonota
                 , numerodocto
                 , serie
                 , replace(TO_CHAR(date(datavencimento), 'DD-MM-YYYY'), '-','') as datavencimento
@@ -95,6 +95,29 @@ def consultar_nota_fiscal(id_solicitacao):
                 idSolicitacaoGasto = %s
                 AND desconsiderAranexo = 'N'
                 AND (tipo = 'DANFE' OR tipo = 'DANFE-ADTO')
+                AND (notacaptadarpa = 'N' or notacaptadarpa is null)
+            """
+        cursor.execute(consulta, (id_solicitacao,))
+        resultados = cursor.fetchall()
+        cursor.close()
+        conn.close()
+
+        return resultados
+    
+def consultar_boleto(id_solicitacao):
+    conn = conectar_banco_dados()
+
+    if conn is not None:
+        cursor = conn.cursor()
+        consulta = """ 
+            SELECT 
+                replace(TO_CHAR(date(datavencimento), 'DD-MM-YYYY'), '-','') as datavencimento
+            FROM 
+                anexoSolicitacaoGasto
+            WHERE 
+                idSolicitacaoGasto = %s
+                AND desconsiderAranexo = 'N'
+                AND tipo = 'Boleto'
                 AND (notacaptadarpa = 'N' or notacaptadarpa is null)
             """
         cursor.execute(consulta, (id_solicitacao,))
