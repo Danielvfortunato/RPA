@@ -136,7 +136,7 @@ class NbsRpa():
         button_image_path = r"C:\Users\user\Documents\RPA_Project\imagens\Inserir_Nota.PNG"
         self.click_specific_button(button_image_path)
 
-    def janela_cadastro_nf(self, cpf_cnpj_value, num_nf_value, serie_value, data_emissao_value, tipo_docto_value, valor_value, contab_descricao_value, total_parcelas_value, tipo_pagamento_value, natureza_financeira_value, numeroos, terceiro, estado, usa_rateio_centro_custo, valor_sg, rateios, rateios_aut, inss, irff, piscofinscsl, iss, vencimento_value, obs, codigo_contab, boletos):
+    def janela_cadastro_nf(self, cpf_cnpj_value, num_nf_value, serie_value, data_emissao_value, tipo_docto_value, valor_value, contab_descricao_value, total_parcelas_value, tipo_pagamento_value, natureza_financeira_value, numeroos, terceiro, estado, usa_rateio_centro_custo, valor_sg, rateios, rateios_aut, inss, irff, piscofinscsl, iss, vencimento_value, obs, codigo_contab, boletos, num_parcela_n_boleto):
         title = "Entrada Diversas / Operação: 52-Entrada Diversas"
         if not self.esperar_janela_visivel(title, timeout=60):
             print("Falha: Janela de cadastro_nf não está visível.")
@@ -176,6 +176,7 @@ class NbsRpa():
         cpf_cnpj.type_keys(cpf_cnpj_value)
         cpf_cnpj.type_keys("{ENTER}")
         esp.click_input()
+
         esp.type_keys(tipo_docto_value)
         num_nf.type_keys(num_nf_value)
         sr.type_keys(serie_value)
@@ -240,9 +241,14 @@ class NbsRpa():
         time.sleep(2)
         tab_faturamento.click_input()
         time.sleep(1)
-        total_parcelas.type_keys(total_parcelas_value)
-        if total_parcelas_value > 1:
-            intervalo.type_keys("30")
+        if tipo_pagamento_value == 'B':
+            total_parcelas.type_keys(total_parcelas_value)
+            if total_parcelas_value > 1:
+                intervalo.type_keys("30")
+        elif tipo_pagamento_value != 'B':
+            total_parcelas.type_keys(num_parcela_n_boleto)
+            if num_parcela_n_boleto > 1:
+                intervalo.type_keys("30")
         time.sleep(1)
         self.click_specific_button(gerar)
         time.sleep(1)
@@ -497,10 +503,10 @@ class NbsRpa():
     
     def back_to_nbs(self):
         title = "Barra de Tarefas"
-        if not self.esperar_janela_visivel(title, timeout=60):
-            print("Falha: Janela de barra de tarefas não está visível.")
-            return
-        time.sleep(2)
+        # if not self.esperar_janela_visivel(title, timeout=60):
+        #     print("Falha: Janela de barra de tarefas não está visível.")
+        #     return
+        # time.sleep(2)
         try:
             app = Application(backend='uia').connect(title=title)
         except ElementNotFoundError:
@@ -707,10 +713,12 @@ class NbsRpa():
                 iss = notas_fiscais[0][9]
                 vencimento_value = notas_fiscais[0][4]
             rateios = database.consultar_rateio(id_solicitacao)
+            num_parcela = database.numero_parcelas(id_solicitacao, numerodocto)
+            numero_parcela_not_boleto = num_parcela[0][0]
             numeroos = row[11]
             terceiro = row[12]
             estado = row[13]
-            self.janela_cadastro_nf(cnpj, numerodocto, serie_value, data_emissao_value, tipo_docto_value, valor_value, contab_descricao_value, total_parcelas_value, tipo_pagamento_value, natureza_financeira_value, numeroos, terceiro, estado, usa_rateio_centro_custo, valor_sg, rateios, rateios_aut, inss, irff, piscofinscsl, iss, vencimento_value, obs, cod_contab_value, boletos)
+            self.janela_cadastro_nf(cnpj, numerodocto, serie_value, data_emissao_value, tipo_docto_value, valor_value, contab_descricao_value, total_parcelas_value, tipo_pagamento_value, natureza_financeira_value, numeroos, terceiro, estado, usa_rateio_centro_custo, valor_sg, rateios, rateios_aut, inss, irff, piscofinscsl, iss, vencimento_value, obs, cod_contab_value, boletos, numero_parcela_not_boleto)
             # time.sleep(10)
             self.janela_imprimir_nota()
             # time.sleep(5)
@@ -739,7 +747,7 @@ class NbsRpa():
             wise_instance.confirm()
             time.sleep(3)
             database.atualizar_anexosolicitacaogasto(numerodocto)
-            time.sleep(2)
+            time.sleep(4)
             self.back_to_nbs()
             time.sleep(2)
             self.close_aplications_half()
@@ -747,4 +755,3 @@ class NbsRpa():
             
 rpa = NbsRpa()
 rpa.funcao_main()
-# 139987
