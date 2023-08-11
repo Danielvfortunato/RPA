@@ -192,3 +192,26 @@ def consultar_rateio_aut(id_rateiocc):
         cursor.close()
         conn.close()
         return resultados    
+    
+
+def numero_parcelas(id_solicitacao, numerodocto):
+    conn = conectar_banco_dados()
+
+    if conn is not None:
+        cursor = conn.cursor()
+        query = """
+        select  
+            count(*) as num_parcelas
+        from 
+            anexosolicitacaogasto a 
+        where 
+            idsolicitacaogasto = %s
+            and doccobranca = 'S' 
+            and numerodocto = %s
+        """
+        cursor.execute(query, (id_solicitacao, numerodocto))
+        resultados = cursor.fetchall()
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return resultados
