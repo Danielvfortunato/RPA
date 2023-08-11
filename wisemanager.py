@@ -10,10 +10,27 @@ import pyautogui
 from selenium.webdriver.support.select import Select
 from selenium.webdriver.chrome.service import Service
 import os
+import pygetwindow as gw
 
 class Wise():
     def __init__(self):
         self.driver = None
+
+    @staticmethod
+    def janela_esta_visivel(title):
+        windows = gw.getWindowsWithTitle(title)
+        if windows and windows[0].visible:
+            return True
+        return False
+  
+    def esperar_janela_visivel(self, title, timeout=60):
+        start_time = time.time()
+        while not self.janela_esta_visivel(title):
+            if time.time() - start_time > timeout:
+                print(f"Falha: Janela {title} não ficou visível após {timeout} segundos.")
+                return False
+            time.sleep(1)
+        return True
 
     def start_chrome_debugger(self):
         for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
