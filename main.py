@@ -60,24 +60,24 @@ class NbsRpa():
         time.sleep(1)
         submit.click_input()
         
-    def initial_page(self):
-        try:
-            app = Application(backend="uia").connect(title="NBS ShortCut")
-        except ElementNotFoundError:
-            print("Falha ao conectar ao aplicativo")
-            return
-        janela = app.window(title="NBS ShortCut")
-        # janela.wait('visible', timeout=120)
-        # Declare Variables
-        apply_sisfin = janela.child_window(class_name="TEdit")
-        # Set Comands
-        apply_sisfin.set_text("SisFin")
-        apply_sisfin.type_keys("{ENTER}")
+    # def initial_page(self):
+    #     try:
+    #         app = Application(backend="uia").connect(title="NBS ShortCut")
+    #     except ElementNotFoundError:
+    #         print("Falha ao conectar ao aplicativo")
+    #         return
+    #     janela = app.window(title="NBS ShortCut")
+    #     # janela.wait('visible', timeout=120)
+    #     # Declare Variables
+    #     apply_sisfin = janela.child_window(class_name="TEdit")
+    #     # Set Comands
+    #     apply_sisfin.set_text("SisFin")
+    #     apply_sisfin.type_keys("{ENTER}")
 
     def janela_empresa_filial(self, empresa_name_value, cod_matriz_value):
         title = "Empresa/Filial"
         if not self.esperar_janela_visivel(title, timeout=60):
-            print("Falha: Janela de login não está visível.")
+            print("Falha: Janela de empresa/filial não está visível.")
             return
         time.sleep(2)
         try:
@@ -100,12 +100,17 @@ class NbsRpa():
         confirma.click_input()
         
     def access_contas_a_pagar(self):
+        title = "Sistema Financeiro - SISFIN"
+        if not self.esperar_janela_visivel(title, timeout=60):
+            print("Falha: Janela de sistema financeiro sisfin não está visível.")
+            return
+        time.sleep(2)
         try:
-            app = Application(backend="win32").connect(title='Sistema Financeiro - SISFIN')
+            app = Application(backend="win32").connect(title=title)
         except ElementNotFoundError:
             print("Erro ao conectar com janela Sistema Financeiro")
             return
-        janela = app['Sistema Financeiro - SISFIN']
+        janela = app[title]
         # janela.wait('visible', timeout=120)
         # Set Comands
         janela.set_focus()
@@ -114,25 +119,35 @@ class NbsRpa():
         pyautogui.press('n')
 
     def janela_entrada(self):
+        title = "Entradas"
+        if not self.esperar_janela_visivel(title, timeout=60):
+            print("Falha: Janela de entradas não está visível.")
+            return
+        time.sleep(2)
         try:
-            app = Application(backend="win32").connect(title="Entradas")
+            app = Application(backend="win32").connect(title=title)
         except ElementNotFoundError:
             print("Erro ao conectar com janela de entradas")
             return 
-        janela = app['Entradas']
+        janela = app[title]
         # janela.wait('visible', timeout=120)
         janela.set_focus()
         time.sleep(2)
         button_image_path = r"C:\Users\user\Documents\RPA_Project\imagens\Inserir_Nota.PNG"
         self.click_specific_button(button_image_path)
 
-    def janela_cadastro_nf(self, cpf_cnpj_value, num_nf_value, serie_value, data_emissao_value, tipo_docto_value, valor_value, contab_descricao_value, total_parcelas_value, tipo_pagamento_value, natureza_financeira_value, numeroos, terceiro, estado, usa_rateio_centro_custo, valor_sg, rateios, rateios_aut, inss, irff, piscofinscsl, iss, vencimento_value, obs, codigo_contab):
+    def janela_cadastro_nf(self, cpf_cnpj_value, num_nf_value, serie_value, data_emissao_value, tipo_docto_value, valor_value, contab_descricao_value, total_parcelas_value, tipo_pagamento_value, natureza_financeira_value, numeroos, terceiro, estado, usa_rateio_centro_custo, valor_sg, rateios, rateios_aut, inss, irff, piscofinscsl, iss, vencimento_value, obs, codigo_contab, boletos):
+        title = "Entrada Diversas / Operação: 52-Entrada Diversas"
+        if not self.esperar_janela_visivel(title, timeout=60):
+            print("Falha: Janela de cadastro_nf não está visível.")
+            return
+        time.sleep(2)
         try:
-            app = Application(backend='uia').connect(title="Entrada Diversas / Operação: 52-Entrada Diversas")
+            app = Application(backend='uia').connect(title=title)
         except ElementNotFoundError:
             print("Não foi possível se conectar com a janela de cadastro de nf")
             return 
-        janela = app['Entrada Diversas / Operação: 52-Entrada Diversas']
+        janela = app[title]
         # janela.wait('visible', timeout=120)
         # Declare Variables
         print(vencimento_value)
@@ -156,6 +171,7 @@ class NbsRpa():
         tipo_pagamento = janela.child_window(class_name="TwwDBLookupCombo", found_index=1)
         natureza_despesa = janela.child_window(class_name="TwwDBLookupCombo", found_index=0)
         submit_button = janela.child_window(class_name="TPanel", found_index=0)
+        barra_boleto = r"C:\Users\user\Documents\RPA_Project\imagens\Barra_Boleto.PNG"
         # Set Comands
         cpf_cnpj.type_keys(cpf_cnpj_value)
         cpf_cnpj.type_keys("{ENTER}")
@@ -204,7 +220,7 @@ class NbsRpa():
         time.sleep(2)
         self.get_conta_contabil()
         conta_contabil = self.get_conta_contabil()
-        time.sleep(2)
+        # time.sleep(2)
         self.fechar_conta_contabilizacao()
         informacao_dialog = janela.child_window(title="Informação")
         ok_button = informacao_dialog.child_window(class_name="Button")
@@ -243,16 +259,27 @@ class NbsRpa():
         time.sleep(1)
         pyautogui.press('tab')
         time.sleep(2)
-        vencimento.double_click_input()
-        time.sleep(1)
-        pyautogui.doubleClick()
-        time.sleep(2)
-        pyautogui.press("backspace")
-        time.sleep(2)
-        print(vencimento_value)
-        str_vencimento = str(vencimento_value)
-        # pyautogui.typewrite(vencimento_value)
-        vencimento.type_keys(str_vencimento)
+        if tipo_pagamento_value == 'B':
+            for boleto in boletos:
+                vencimento.click_input()
+                time.sleep(1)
+                pyautogui.doubleClick()
+                time.sleep(1)
+                pyautogui.press("backspace")
+                vencimento.type_keys(boleto[0])
+                time.sleep(1)
+                self.click_specific_button(barra_boleto)
+                pyautogui.press("down")
+        else:
+            vencimento.double_click_input()
+            time.sleep(1)
+            pyautogui.doubleClick()
+            time.sleep(2)
+            pyautogui.press("backspace")
+            time.sleep(2)
+            print(vencimento_value)
+            str_vencimento = str(vencimento_value)
+            vencimento.type_keys(str_vencimento)
         print(terceiro)
         if terceiro == 'S':
             self.janela_se_terceiro(numeroos)
@@ -266,12 +293,17 @@ class NbsRpa():
         pyautogui.press('enter')
 
     def janela_se_terceiro(self, numeroos):
+        title = "Entrada Diversas / Operação: 52-Entrada Diversas"
+        if not self.esperar_janela_visivel(title, timeout=60):
+            print("Falha: Janela de cadastro_nf não está visível.")
+            return
+        time.sleep(2)
         try:
-            app = Application(backend='uia').connect(title="Entrada Diversas / Operação: 52-Entrada Diversas")
+            app = Application(backend='uia').connect(title=title)
         except ElementNotFoundError:
             print("Não foi possível se conectar com a janela de cadastro de nf")
             return 
-        janela = app['Entrada Diversas / Operação: 52-Entrada Diversas'] 
+        janela = app[title] 
         relacao_os = janela.child_window(control_type="TabItem", found_index=3)
         cadeado = r"C:\Users\user\Documents\RPA_Project\imagens\Cadeado.PNG"
         pesquisa_os = r"C:\Users\user\Documents\RPA_Project\imagens\Procura_Os.PNG"
@@ -294,45 +326,65 @@ class NbsRpa():
             pyautogui.press('enter')
 
     def janela_valores(self):
+        title = "Entrada Diversas / Operação: 52-Nota de despesas Diversas"
+        if not self.esperar_janela_visivel(title, timeout=60):
+            print("Falha: Janela de cadastro_nf não está visível.")
+            return
+        time.sleep(2)
         try:
-            app = Application(backend='uia').connect(title="Entrada Diversas / Operação: 52-Nota de despesas Diversas")
+            app = Application(backend='uia').connect(title=title)
         except ElementNotFoundError:
             print("Não foi possível se conectar com a janela de nota de despesas")
             return 
-        janela = app['Entrada Diversas / Operação: 52-Nota de despesas Diversas']
+        janela = app[title]
         tab_dados = janela.child_window(control_type="TabItem", found_index=1)
         tab_dados.click_input()
         pyautogui.press("enter")
     
     def get_controle_value(self):
+        title = "Entrada Diversas / Operação: 52-Nota de despesas Diversas"
+        if not self.esperar_janela_visivel(title, timeout=60):
+            print("Falha: Janela de cadastro_nf não está visível.")
+            return
+        time.sleep(2)
         try:
-            app = Application(backend='uia').connect(title="Entrada Diversas / Operação: 52-Nota de despesas Diversas")
+            app = Application(backend='uia').connect(title=title)
         except ElementNotFoundError:
             print("Não foi possível se conectar com a janela de nota de despesas")
             return 
-        janela = app['Entrada Diversas / Operação: 52-Nota de despesas Diversas']
+        janela = app[title]
         controle = janela.child_window(class_name="TDBEdit", found_index=2)
         properties = controle.legacy_properties()
         return properties['Value']
     
     def janela_imprimir_nota(self):
+        title = "Ficha de Controle de Pagamento"
+        if not self.esperar_janela_visivel(title, timeout=60):
+            print("Falha: Janela de ficha de controle de pagamento não está visível.")
+            return
+        time.sleep(2)
         try:
-            app = Application(backend='uia').connect(title="Ficha de Controle de Pagamento")
+            app = Application(backend='uia').connect(title=title)
         except ElementNotFoundError:
             print("Não foi possível se conectar com a janela de imprimir nota")
             return 
-        janela = app['Ficha de Controle de Pagamento']
+        janela = app[title]
         # janela.wait('visible', timeout=120)
         imprimir = r"C:\Users\user\Documents\RPA_Project\imagens\Imprimir.PNG"
         self.click_specific_button(imprimir)
 
     def janela_secundario_imprimir_nota(self):
+        title = "Report Destination"
+        if not self.esperar_janela_visivel(title, timeout=60):
+            print("Falha: Janela de report destination não está visível.")
+            return
+        time.sleep(2)
         try:
-            app = Application(backend='uia').connect(title="Report Destination")
+            app = Application(backend='uia').connect(title=title)
         except ElementNotFoundError:
             print("Não foi possível se conectar com a janela secundaria de imprimir nota")
             return 
-        janela = app['Report Destination']
+        janela = app[title]
         # janela.wait('visible', timeout=120)
         # Declare Variables
         v_print = janela.child_window(found_index=12)
@@ -340,34 +392,38 @@ class NbsRpa():
         v_print.click_input()
 
     def extract_pdf(self):
+        title = "Ace Viewer"
+        if not self.esperar_janela_visivel(title, timeout=60):
+            print("Falha: Janela de ace viewer não está visível.")
+            return
+        time.sleep(2)
         try:
-            app = Application(backend='uia').connect(title="Ace Viewer")
+            app = Application(backend='uia').connect(title=title)
         except ElementNotFoundError:
             print("Não foi possível se conectar com a janela Ace Viewer")
             return 
-        janela = app['Ace Viewer']
-        # janela.wait('visible', timeout=120)
-        # janela.set_focus()
+        janela = app[title]
         pyautogui.hotkey('alt', 'f')
         time.sleep(1)
         pyautogui.press('s')
 
     def save_as(self, num_docto):
+        title = "Salvar como"
+        if not self.esperar_janela_visivel(title, timeout=60):
+            print("Falha: Janela de salvar como não está visível.")
+            return
+        time.sleep(2)
         try:
-            app = Application(backend='uia').connect(title="Salvar como")
+            app = Application(backend='uia').connect(title=title)
         except ElementNotFoundError:
             print("Não foi possível se conectar com a janela Salvar como")
             return 
-        janela = app['Salvar como']
-        # janela.wait('visible', timeout=120)
-        # Declare Variables
+        janela = app[title]
         try:
             get_document = janela.child_window(title="APs (fixo)")
             get_document.click_input()
         except:
             pass
-        # time.sleep(1)
-        # pyautogui.press("enter")
         time.sleep(2)
         file_name = janela.child_window(class_name="Edit")
         file_type = janela.child_window(class_name="AppControlHost", found_index=1)
@@ -397,12 +453,17 @@ class NbsRpa():
             print("Botão não encontrado.")
 
     def close_extract_pdf_window(self):
+        title = "Ace Viewer"
+        if not self.esperar_janela_visivel(title, timeout=60):
+            print("Falha: Janela de ace viewer não está visível.")
+            return
+        time.sleep(2)
         try:
-            app = Application(backend='uia').connect(title="Ace Viewer")
+            app = Application(backend='uia').connect(title=title)
         except ElementNotFoundError:
             print("Não foi possível se conectar com a janela Ace Viewer")
             return 
-        janela = app['Ace Viewer']
+        janela = app[title]
         # janela.wait('visible', timeout=120)
         janela.set_focus()
         fechar = janela.child_window(title="Fechar")
@@ -435,22 +496,32 @@ class NbsRpa():
     #     return None
     
     def back_to_nbs(self):
+        title = "Barra de Tarefas"
+        if not self.esperar_janela_visivel(title, timeout=60):
+            print("Falha: Janela de barra de tarefas não está visível.")
+            return
+        time.sleep(2)
         try:
-            app = Application(backend='uia').connect(title="Barra de Tarefas")
+            app = Application(backend='uia').connect(title=title)
         except ElementNotFoundError:
             print("Não foi possível se conectar com a janela Barra de Tarefas")
             return 
-        janela = app['Barra de Tarefas']
+        janela = app[title]
         minimizar_google = janela.child_window(title="Google Chrome - 1 executando o windows")
         minimizar_google.click_input()
         
     def fechar_conta_contabilizacao(self):
+        title = "Alterar Conta de Contabilização"
+        if not self.esperar_janela_visivel(title, timeout=60):
+            print("Falha: Janela de alterar conta contabilizacao não está visível.")
+            return
+        time.sleep(2)
         try:
-            app = Application(backend='uia').connect(title="Alterar Conta de Contabilização")
+            app = Application(backend='uia').connect(title=title)
         except ElementNotFoundError:
             print("Não foi possível se conectar com a janela de alterar conta de contabilizacao")
             return 
-        janela = app['Alterar Conta de Contabilização']
+        janela = app[title]
         fechar = janela.child_window(class_name='TBitBtn', found_index=0)
         fechar.click_input()
    
@@ -477,13 +548,14 @@ class NbsRpa():
                 time.sleep(1)
                 contacontabil.type_keys(conta_contabil)
                 pyautogui.press("tab")
+                time.sleep(1)
                 centro_custo.type_keys(rateio[0]) 
+                time.sleep(1)
                 historico_padrao.click_input()
                 pyautogui.typewrite("85")
+                vlr_rateio = self.get_valor_rateio_manual(rateio[1], valor_sg, vlr_nf)
                 if indice != tamanho_manual - 1:
-                    vlr_rateio = self.get_valor_rateio_manual(rateio[1], valor_sg, vlr_nf)
                     valor_rateio.type_keys(vlr_rateio)
-                    # print(vlr_rateio)
                 time.sleep(1)
                 confirmar.click_input()
                 time.sleep(1)
@@ -492,13 +564,14 @@ class NbsRpa():
                 self.click_specific_button(incluir)
                 contacontabil.type_keys(conta_contabil)
                 pyautogui.press("tab")
+                time.sleep(1)
                 centro_custo.type_keys(rateio_aut[0]) 
+                time.sleep(1)
                 historico_padrao.click_input()
                 pyautogui.typewrite("85")
+                vlr_rateio = self.get_valor_rateio_aut(vlr_nf, rateio_aut[1])
                 if indice != tamanho_aut - 1:
-                    vlr_rateio = self.get_valor_rateio_aut(vlr_nf, rateio_aut[1])
                     valor_rateio.type_keys(vlr_rateio)
-                    # print(vlr_rateio)
                 time.sleep(1)
                 confirmar.click_input()
                 time.sleep(1)
@@ -523,12 +596,17 @@ class NbsRpa():
         return valor_rateio_str.replace('.', ',')
 
     def get_conta_contabil(self):
+        title = "Alterar Conta de Contabilização"
+        if not self.esperar_janela_visivel(title, timeout=60):
+            print("Falha: Janela de alterar conta contabilizacao não está visível.")
+            return
+        time.sleep(2)
         try:
-            app = Application(backend='uia').connect(title="Alterar Conta de Contabilização")
+            app = Application(backend='uia').connect(title=title)
         except ElementNotFoundError:
             print("Não foi possível se conectar com a janela de alterar conta de contabilizacao")
             return 
-        janela = app['Alterar Conta de Contabilização']
+        janela = app[title]
         time.sleep(2)
         conta_contabil = janela.child_window(class_name="TNBSContaContab")
         conta_contabil_value = conta_contabil.legacy_properties()
@@ -536,12 +614,17 @@ class NbsRpa():
         return conta_contabil_value['Value']
     
     def calculo_tributos(self, inss, irff, piscofinscsl, iss, nota_fiscal):
+        title = ".:Cálculo de tributos:."
+        if not self.esperar_janela_visivel(title, timeout=60):
+            print("Falha: Janela de calculo de tributos não está visível.")
+            return
+        time.sleep(2)
         try:
-            app = Application(backend='uia').connect(title=".:Cálculo de tributos:.")
+            app = Application(backend='uia').connect(title=title)
         except ElementNotFoundError:
             print("Não foi possível se conectar com a janela de cadastro de calculo de tributos")
             return 
-        janela = app['.:Cálculo de tributos:.']
+        janela = app[title]
         check_csll = janela.child_window(class_name="TCheckBox", found_index=4)
         check_cofins = janela.child_window(class_name="TCheckBox", found_index=3)
         check_pis = janela.child_window(class_name="TCheckBox", found_index=2)
@@ -590,14 +673,14 @@ class NbsRpa():
                 # time.sleep(4)
                 # time.sleep(12)
                 self.janela_empresa_filial(row[2], row[3])
-            time.sleep(5)
+            # time.sleep(5)
             empresa_anterior = empresa_atual
             print(empresa_anterior, empresa_atual)
-            time.sleep(3)
+            # time.sleep(3)
             self.access_contas_a_pagar()
-            time.sleep(7)
+            # time.sleep(7)
             self.janela_entrada() 
-            time.sleep(5)
+            # time.sleep(5)
             id_solicitacao = row[0]
             cnpj = row[1]
             contab_descricao_value = row[6]
@@ -611,6 +694,7 @@ class NbsRpa():
             obs = row[17]
             rateios_aut = database.consultar_rateio_aut(id_rateiocc)
             notas_fiscais = database.consultar_nota_fiscal(id_solicitacao)
+            boletos = database.consultar_boleto(id_solicitacao)
             if notas_fiscais:
                 numerodocto = notas_fiscais[0][2]
                 serie_value = notas_fiscais[0][3]
@@ -626,20 +710,20 @@ class NbsRpa():
             numeroos = row[11]
             terceiro = row[12]
             estado = row[13]
-            self.janela_cadastro_nf(cnpj, numerodocto, serie_value, data_emissao_value, tipo_docto_value, valor_value, contab_descricao_value, total_parcelas_value, tipo_pagamento_value, natureza_financeira_value, numeroos, terceiro, estado, usa_rateio_centro_custo, valor_sg, rateios, rateios_aut, inss, irff, piscofinscsl, iss, vencimento_value, obs, cod_contab_value)
-            time.sleep(10)
+            self.janela_cadastro_nf(cnpj, numerodocto, serie_value, data_emissao_value, tipo_docto_value, valor_value, contab_descricao_value, total_parcelas_value, tipo_pagamento_value, natureza_financeira_value, numeroos, terceiro, estado, usa_rateio_centro_custo, valor_sg, rateios, rateios_aut, inss, irff, piscofinscsl, iss, vencimento_value, obs, cod_contab_value, boletos)
+            # time.sleep(10)
             self.janela_imprimir_nota()
-            time.sleep(5)
+            # time.sleep(5)
             self.janela_secundario_imprimir_nota()
-            time.sleep(5)
+            # time.sleep(5)
             self.extract_pdf()
-            time.sleep(3)
+            # time.sleep(3)
             self.save_as(numerodocto)
-            time.sleep(5)
+            # time.sleep(5)
             self.close_extract_pdf_window()
             time.sleep(2)
             self.click_on_cancel()
-            time.sleep(5)
+            # time.sleep(5)
             self.janela_valores()
             time.sleep(2)
             num_controle = self.get_controle_value()
@@ -649,7 +733,7 @@ class NbsRpa():
             wise_instance = Wise()
             time.sleep(3)
             wise_instance.Anexar_AP(id_solicitacao, num_controle, numerodocto)
-            time.sleep(3)
+            # time.sleep(3)
             wise_instance.get_pdf_file(numerodocto)
             time.sleep(4)
             wise_instance.confirm()
