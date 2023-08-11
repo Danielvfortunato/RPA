@@ -95,12 +95,17 @@ class Wise():
         self.driver.execute_script("arguments[0].click();", file_input)
 
     def get_pdf_file(self, numero_docto):
+        title = "WiseManager - Google Chrome"
+        if not self.esperar_janela_visivel(title, timeout=60):
+            print("Falha: Janela de calculo de tributos não está visível.")
+            return
+        time.sleep(2)
         try:
-            app = Application(backend="uia").connect(title="WiseManager - Google Chrome")
+            app = Application(backend="uia").connect(title=title)
         except ElementNotFoundError:
             print("Falha ao conectar com página pegar pdf")
             return 
-        janela = app['WiseManager - Google Chrome']
+        janela = app[title]
         try:
             get_document = janela.child_window(title="APs (fixo)", found_index=0)
             get_document.click_input()
