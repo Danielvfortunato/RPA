@@ -87,7 +87,7 @@ class Wise():
         self.driver.get("https://gera.wisemanager.com.br/WiseManagerBI/#/financeiro/efetivacaoSolicitacaoGastoNew")
         if self.driver.find_elements(By.NAME, "j_username") and self.driver.find_elements(By.NAME, "j_password"):
             self.login()
-            time.sleep(10)
+        time.sleep(10)
         select_element = self.driver.find_element(By.CSS_SELECTOR, 'select.form-control.input-sm[ng-model="filtro.campo"]')
         select = Select(select_element)
         select.select_by_value('id')
@@ -111,7 +111,7 @@ class Wise():
         file_input = self.driver.find_element(By.XPATH, "//input[@class='file-input']")
         self.driver.execute_script("arguments[0].click();", file_input)
 
-    def get_pdf_file(self, numero_docto):
+    def get_pdf_file(self, numero_docto, id_solicitacao):
         title = "WiseManager - Google Chrome"
         if not self.esperar_janela_visivel(title, timeout=60):
             print("Falha: Janela de calculo de tributos não está visível.")
@@ -131,7 +131,7 @@ class Wise():
         
         file_name = janela.child_window(class_name="Edit")
         time.sleep(2)
-        file_name.type_keys(f"AP_{numero_docto}.PDF")
+        file_name.type_keys(f"AP_{numero_docto}{id_solicitacao}.PDF")
         file_name.type_keys("{ENTER}")
 
     def confirm(self):
@@ -163,7 +163,3 @@ class Wise():
             print("Botão clicado!")
         else:
             print("Botão não encontrado.")
-
-
-# wise = Wise()
-# wise.Anexar_AP(123, 123, 123)
