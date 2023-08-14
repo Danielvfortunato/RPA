@@ -14,6 +14,7 @@ def conectar_banco_dados():
     except (psycopg2.Error) as error:
         print("Erro ao se conectar ao banco de dados PostgreSQL:", error)
 
+
 def consultar_dados_cadastro():
     conn = conectar_banco_dados()
 
@@ -71,7 +72,7 @@ def consultar_dados_cadastro():
         cursor.close()
         conn.close()
         return resultados
-    
+
 def consultar_nota_fiscal(id_solicitacao):
     conn = conectar_banco_dados()
 
@@ -201,13 +202,16 @@ def numero_parcelas(id_solicitacao, numerodocto):
         cursor = conn.cursor()
         query = """
         select  
-            count(*) as num_parcelas
+            replace(TO_CHAR(date(datavencimento), 'DD-MM-YYYY'), '-','') as datavencimento 
         from 
             anexosolicitacaogasto a 
         where 
             idsolicitacaogasto = %s
             and doccobranca = 'S' 
             and numerodocto = %s
+            and desconsideraranexo = 'N'  
+        order by 
+        	replace(TO_CHAR(date(datavencimento), 'DD-MM-YYYY'), '-','')
         """
         cursor.execute(query, (id_solicitacao, numerodocto))
         resultados = cursor.fetchall()
