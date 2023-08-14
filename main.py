@@ -136,7 +136,7 @@ class NbsRpa():
         button_image_path = r"C:\Users\user\Documents\RPA_Project\imagens\Inserir_Nota.PNG"
         self.click_specific_button(button_image_path)
 
-    def janela_cadastro_nf(self, cpf_cnpj_value, num_nf_value, serie_value, data_emissao_value, tipo_docto_value, valor_value, contab_descricao_value, total_parcelas_value, tipo_pagamento_value, natureza_financeira_value, numeroos, terceiro, estado, usa_rateio_centro_custo, valor_sg, rateios, rateios_aut, inss, irff, piscofinscsl, iss, vencimento_value, obs, codigo_contab, boletos, num_parcela_n_boleto):
+    def janela_cadastro_nf(self, cpf_cnpj_value, num_nf_value, serie_value, data_emissao_value, tipo_docto_value, valor_value, contab_descricao_value, total_parcelas_value, tipo_pagamento_value, natureza_financeira_value, numeroos, terceiro, estado, usa_rateio_centro_custo, valor_sg, rateios, rateios_aut, inss, irff, piscofinscsl, iss, vencimento_value, obs, codigo_contab, boletos, num_parcelas):
         title = "Entrada Diversas / Operação: 52-Entrada Diversas"
         if not self.esperar_janela_visivel(title, timeout=60):
             print("Falha: Janela de cadastro_nf não está visível.")
@@ -246,6 +246,7 @@ class NbsRpa():
             if total_parcelas_value > 1:
                 intervalo.type_keys("30")
         elif tipo_pagamento_value != 'B':
+            num_parcela_n_boleto = len(num_parcelas)
             total_parcelas.type_keys(num_parcela_n_boleto)
             if num_parcela_n_boleto > 1:
                 intervalo.type_keys("30")
@@ -258,6 +259,9 @@ class NbsRpa():
             pyautogui.press('tab')
         elif tipo_pagamento_value in ('P','D'):
             pyautogui.typewrite('Deposito')
+            pyautogui.press('tab')
+        elif tipo_pagamento_value in ('E'):
+            pyautogui.typewrite('Especie')
             pyautogui.press('tab')
         natureza_despesa.click_input()
         time.sleep(1)
@@ -277,15 +281,25 @@ class NbsRpa():
                 self.click_specific_button(barra_boleto)
                 pyautogui.press("down")
         else:
-            vencimento.double_click_input()
-            time.sleep(1)
-            pyautogui.doubleClick()
-            time.sleep(2)
-            pyautogui.press("backspace")
-            time.sleep(2)
-            print(vencimento_value)
-            str_vencimento = str(vencimento_value)
-            vencimento.type_keys(str_vencimento)
+            # vencimento.double_click_input()
+            # time.sleep(1)
+            # pyautogui.doubleClick()
+            # time.sleep(2)
+            # pyautogui.press("backspace")
+            # time.sleep(2)
+            # print(vencimento_value)
+            # str_vencimento = str(vencimento_value)
+            # vencimento.type_keys(str_vencimento)
+            for n in num_parcelas:
+                vencimento.click_input()
+                time.sleep(1)
+                pyautogui.doubleClick()
+                time.sleep(1)
+                pyautogui.press("backspace")
+                vencimento.type_keys(n[0])
+                time.sleep(1)
+                self.click_specific_button(barra_boleto)
+                pyautogui.press("down")
         print(terceiro)
         if terceiro == 'S':
             self.janela_se_terceiro(numeroos)
@@ -413,7 +427,7 @@ class NbsRpa():
         time.sleep(1)
         pyautogui.press('s')
 
-    def save_as(self, num_docto):
+    def save_as(self, num_docto, id_solicitacao):
         title = "Salvar como"
         if not self.esperar_janela_visivel(title, timeout=60):
             print("Falha: Janela de salvar como não está visível.")
@@ -434,7 +448,7 @@ class NbsRpa():
         file_name = janela.child_window(class_name="Edit")
         file_type = janela.child_window(class_name="AppControlHost", found_index=1)
         # Set Comands
-        file_name.type_keys(f"AP_{num_docto}")
+        file_name.type_keys(f"AP_{num_docto}{id_solicitacao}")
         pyautogui.press('tab')
         file_type.click_input()
         for _ in range(2):
@@ -619,6 +633,7 @@ class NbsRpa():
         print(conta_contabil_value['Value'])
         return conta_contabil_value['Value']
     
+    
     def calculo_tributos(self, inss, irff, piscofinscsl, iss, nota_fiscal):
         title = ".:Cálculo de tributos:."
         if not self.esperar_janela_visivel(title, timeout=60):
@@ -713,12 +728,11 @@ class NbsRpa():
                 iss = notas_fiscais[0][9]
                 vencimento_value = notas_fiscais[0][4]
             rateios = database.consultar_rateio(id_solicitacao)
-            num_parcela = database.numero_parcelas(id_solicitacao, numerodocto)
-            numero_parcela_not_boleto = num_parcela[0][0]
+            num_parcelas = database.numero_parcelas(id_solicitacao, numerodocto)
             numeroos = row[11]
             terceiro = row[12]
             estado = row[13]
-            self.janela_cadastro_nf(cnpj, numerodocto, serie_value, data_emissao_value, tipo_docto_value, valor_value, contab_descricao_value, total_parcelas_value, tipo_pagamento_value, natureza_financeira_value, numeroos, terceiro, estado, usa_rateio_centro_custo, valor_sg, rateios, rateios_aut, inss, irff, piscofinscsl, iss, vencimento_value, obs, cod_contab_value, boletos, numero_parcela_not_boleto)
+            self.janela_cadastro_nf(cnpj, numerodocto, serie_value, data_emissao_value, tipo_docto_value, valor_value, contab_descricao_value, total_parcelas_value, tipo_pagamento_value, natureza_financeira_value, numeroos, terceiro, estado, usa_rateio_centro_custo, valor_sg, rateios, rateios_aut, inss, irff, piscofinscsl, iss, vencimento_value, obs, cod_contab_value, boletos, num_parcelas)
             # time.sleep(10)
             self.janela_imprimir_nota()
             # time.sleep(5)
@@ -726,7 +740,7 @@ class NbsRpa():
             # time.sleep(5)
             self.extract_pdf()
             # time.sleep(3)
-            self.save_as(numerodocto)
+            self.save_as(numerodocto, id_solicitacao)
             # time.sleep(5)
             self.close_extract_pdf_window()
             time.sleep(2)
@@ -742,7 +756,7 @@ class NbsRpa():
             time.sleep(3)
             wise_instance.Anexar_AP(id_solicitacao, num_controle, numerodocto)
             # time.sleep(3)
-            wise_instance.get_pdf_file(numerodocto)
+            wise_instance.get_pdf_file(numerodocto, id_solicitacao)
             time.sleep(4)
             wise_instance.confirm()
             time.sleep(3)
