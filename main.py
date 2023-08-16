@@ -5,6 +5,9 @@ import database
 import pyautogui
 from wisemanager import Wise
 import pygetwindow as gw
+import re
+from pytesseract import pytesseract
+from pdf2image import convert_from_path
 
 class NbsRpa():
     
@@ -53,11 +56,11 @@ class NbsRpa():
         submit = janela.child_window(class_name="TfcImageBtn", found_index=0)
         # Set Comands
         user.type_keys("NBS")
-        time.sleep(1)
+        time.sleep(2)
         password.type_keys("gerati2023")
-        time.sleep(1)
+        time.sleep(2)
         server.type_keys("nbs")
-        time.sleep(1)
+        time.sleep(2)
         submit.click_input()
         
     # def initial_page(self):
@@ -136,7 +139,7 @@ class NbsRpa():
         button_image_path = r"C:\Users\user\Documents\RPA_Project\imagens\Inserir_Nota.PNG"
         self.click_specific_button(button_image_path)
 
-    def janela_cadastro_nf(self, cpf_cnpj_value, num_nf_value, serie_value, data_emissao_value, tipo_docto_value, valor_value, contab_descricao_value, total_parcelas_value, tipo_pagamento_value, natureza_financeira_value, numeroos, terceiro, estado, usa_rateio_centro_custo, valor_sg, rateios, rateios_aut, inss, irff, piscofinscsl, iss, vencimento_value, obs, codigo_contab, boletos, num_parcelas):
+    def janela_cadastro_nf(self, cpf_cnpj_value, num_nf_value, serie_value, data_emissao_value, tipo_docto_value, valor_value, contab_descricao_value, total_parcelas_value, tipo_pagamento_value, natureza_financeira_value, numeroos, terceiro, estado, usa_rateio_centro_custo, valor_sg, rateios, rateios_aut, inss, irff, piscofinscsl, iss, vencimento_value, obs, codigo_contab, boletos, num_parcelas, id_solicitacao):
         title = "Entrada Diversas / Operação: 52-Entrada Diversas"
         if not self.esperar_janela_visivel(title, timeout=60):
             print("Falha: Janela de cadastro_nf não está visível.")
@@ -148,8 +151,6 @@ class NbsRpa():
             print("Não foi possível se conectar com a janela de cadastro de nf")
             return 
         janela = app[title]
-        # janela.wait('visible', timeout=120)
-        # Declare Variables
         print(vencimento_value)
         cpf_cnpj = janela.child_window(class_name="TCPF_CGC")
         esp = janela.child_window(class_name="TOvcDbPictureField", found_index=2)
@@ -158,16 +159,14 @@ class NbsRpa():
         sr = janela.child_window(class_name="TOvcDbPictureField", found_index=5)
         data_emissao = janela.child_window(class_name="TOvcDbPictureField", found_index=4)
         vlr_nf = janela.child_window(class_name="TOvcDbPictureField", found_index=20)
-        tab_contab = janela.child_window(control_type="TabItem", found_index=2)
+        tab_contab = janela.child_window(title=' Contabilização ', control_type="TabItem")
         descricao = janela.child_window(class_name="TwwDBLookupCombo")
-        descricao_detail = janela.child_window(class_name='TBtnWinControl')
         raio = r"C:\Users\user\Documents\RPA_Project\imagens\Raio.PNG"
         gerar = r"C:\Users\user\Documents\RPA_Project\imagens\Gerar.PNG"
-        tab_faturamento = janela.child_window(control_type="TabItem", found_index=2)
+        tab_faturamento = janela.child_window(title='   Faturamento   ', control_type="TabItem")
         total_parcelas = janela.child_window(class_name="TOvcNumericField", found_index=0)
         intervalo = janela.child_window(class_name="TOvcNumericField", found_index=1)
         vencimento = janela.child_window(class_name="TOvcDbPictureField", found_index=4)
-        # gerar
         tipo_pagamento = janela.child_window(class_name="TwwDBLookupCombo", found_index=1)
         natureza_despesa = janela.child_window(class_name="TwwDBLookupCombo", found_index=0)
         submit_button = janela.child_window(class_name="TPanel", found_index=0)
@@ -176,7 +175,6 @@ class NbsRpa():
         cpf_cnpj.type_keys(cpf_cnpj_value)
         cpf_cnpj.type_keys("{ENTER}")
         esp.click_input()
-
         esp.type_keys(tipo_docto_value)
         num_nf.type_keys(num_nf_value)
         sr.type_keys(serie_value)
@@ -193,18 +191,89 @@ class NbsRpa():
                 time.sleep(3)
                 self.calculo_tributos(inss, irff, piscofinscsl, iss, valor_value)
         time.sleep(1)
-        observacao.type_keys(obs)
+        observacao.click_input()
+        time.sleep(1)
+        pyautogui.typewrite(obs)
+        # se for nota fiscal de produto 
+        habilitar_livro = janela.child_window(title='Quero esta nota no livro fiscal')
         time.sleep(2)
+        habilitar_livro.click_input()
+        chave_acesso = self.get_chave_acesso(num_nf_value, id_solicitacao)
+        modelo = self.get_modelo(chave_acesso)
+        time.sleep(2)
+        janela_chave_modelo = janela.child_window(title="Modelo Fiscal / Chave e Outros")
+        janela_chave_modelo.click_input()
+        time.sleep(1)
+        modelo_fiscal = janela.child_window(class_name='TwwDBLookupCombo', found_index=0)
+        modelo_fiscal.click_input()
+        time.sleep(1)
+        if modelo == '55':
+            modelo_fiscal.click_input()
+            time.sleep(1)
+            pyautogui.typewrite('nota fiscal eletronica')
+        elif modelo == '10':
+            modelo_fiscal.click_input()
+            time.sleep(1)
+            pyautogui.typewrite('Conhecimento Aereo')
+        elif modelo == '67':
+            modelo_fiscal.click_input()
+            time.sleep(1)
+            pyautogui.typewrite('Conhecimento de transp eletronico')
+        elif modelo == '9':
+            modelo_fiscal.click_input()
+            time.sleep(1)
+            pyautogui.typewrite('Conhecimento de Transporte Aquaviario de cargas')
+        elif modelo == '57':
+            modelo_fiscal.click_input()
+            time.sleep(1)
+            pyautogui.typewrite('Conhecimento de transporte eletronico - CT-e')
+        elif modelo == '11':
+            modelo_fiscal.click_input()
+            time.sleep(1)
+            pyautogui.typewrite('Conhecimento de Transporte Ferroviario de Cargas')
+        elif modelo == '8':
+            modelo_fiscal.click_input()
+            time.sleep(1)
+            pyautogui.typewrite('Conhecimento de Transporte Rodoviario de cargas')
+        elif modelo == '1B':
+            modelo_fiscal.click_input()
+            time.sleep(1)
+            pyautogui.typewrite('NOTA FISCAL AVULSA')
+        elif modelo == '66':
+            modelo_fiscal.click_input()
+            time.sleep(1)
+            pyautogui.typewrite('NOTA FISCAL DE ENERGIA ELETRICA ELETRONICA')
+        elif modelo == '29':
+            modelo_fiscal.click_input()
+            time.sleep(1)
+            pyautogui.typewrite('Nota Fiscal/Conta de Fornecimento')
+        elif modelo == '1':
+            modelo_fiscal.click_input()
+            time.sleep(1)
+            pyautogui.typewrite('NotaFiscal')
+        elif modelo == '21':
+            modelo_fiscal.click_input()
+            time.sleep(1)
+            pyautogui.typewrite('NotaFiscal de Servico de Comunicacao')
+        elif modelo == '22':
+            modelo_fiscal.click_input()
+            time.sleep(1)
+            pyautogui.typewrite('NotaFiscal de Servico de Telecomunicacoes')
+        elif modelo == '7':
+            modelo_fiscal.click_input()
+            time.sleep(1)
+            pyautogui.typewrite('NotaFiscal de Servico de Transporte')
+        elif modelo == '6':
+            modelo_fiscal.click_input()
+            time.sleep(1)
+            pyautogui.typewrite('NotaFiscal/Conta de Energia Eletrica')
+        time.sleep(1)
+        chave_nfe = janela.child_window(class_name='TDBEdit', found_index=6)
+        chave_nfe.type_keys(chave_acesso)
+        ##### se for nota fiscal de produto
         tab_contab.click_input()
-        time.sleep(0.1) 
-        pyautogui.press('right')
         excluir = r"C:\Users\user\Documents\RPA_Project\imagens\Excluir.PNG"
         time.sleep(1)
-        # descricao.type_keys(contab_descricao_value)
-        # time.sleep(1)
-        # descricao_detail.click_input()
-        # time.sleep(1)
-        # pyautogui.press("enter")
         cod_contab = janela.child_window(class_name="TOvcNumericField", found_index=0)
         cod_contab.click_input()
         time.sleep(1)
@@ -517,10 +586,6 @@ class NbsRpa():
     
     def back_to_nbs(self):
         title = "Barra de Tarefas"
-        # if not self.esperar_janela_visivel(title, timeout=60):
-        #     print("Falha: Janela de barra de tarefas não está visível.")
-        #     return
-        # time.sleep(2)
         try:
             app = Application(backend='uia').connect(title=title)
         except ElementNotFoundError:
@@ -678,44 +743,45 @@ class NbsRpa():
                 iss_value.type_keys(str(iss).replace('.', ','))
         time.sleep(1)
         confirm.click_input()
-        
+    
+    def get_chave_acesso(self, num_docto, id_solicitacao):
+        # pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+        # caminho_pdf = rf"C:\Users\user\Documents\APs\nota_{num_docto}{id_solicitacao}.pdf"
+        # imagens = convert_from_path(caminho_pdf)
+        # texto_total = ""
+        # for imagem in imagens:
+        #     texto = pytesseract.image_to_string(imagem)
+        #     if texto:
+        #         texto_total += texto + '\n'
+        # pattern = r'(\d{4} ){10}\d{4}'
+        # resultado = re.search(pattern, texto_total)
+        # chave_acesso = resultado.group().replace(' ', '') if resultado else "Chave de acesso não encontrada"
+        # return chave_acesso
+        pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+        caminho_pdf = rf"C:\Users\user\Documents\APs\nota_{num_docto}{id_solicitacao}.pdf"
+        imagens = convert_from_path(caminho_pdf)
+        texto_total = ""
+        for imagem in imagens:
+            texto = pytesseract.image_to_string(imagem)
+            if texto:
+                texto_total += texto + '\n'
+        chave_acesso_match = re.search(r'((\d{4}[\W\s]){10}\d{4})', texto_total)
+        chave_acesso = chave_acesso_match.group(0) if chave_acesso_match else None
+        if chave_acesso:
+            nao_numericos = re.findall(r'[^\d]', chave_acesso)
+            if nao_numericos:
+                chave_acesso = re.sub(r'[^\d]', '', chave_acesso)
+        return chave_acesso
+
+    def get_modelo(self, chave_acesso):
+        return chave_acesso[20:22] if len(chave_acesso) > 21 else "Não foi possível extrair os números"
+            
     def funcao_main(self):
         registros = database.consultar_dados_cadastro()
         empresa_anterior = None
         for row in registros:
-            empresa_atual = row[2]
-            if empresa_atual != empresa_anterior:
-                self.close_aplications_end()
-                time.sleep(3)
-                self.open_application()
-                # time.sleep(3)
-                # time.sleep(4)
-                self.login()
-                # time.sleep(4)
-                # time.sleep(12)
-                self.janela_empresa_filial(row[2], row[3])
-            # time.sleep(5)
-            empresa_anterior = empresa_atual
-            print(empresa_anterior, empresa_atual)
-            # time.sleep(3)
-            self.access_contas_a_pagar()
-            # time.sleep(7)
-            self.janela_entrada() 
-            # time.sleep(5)
             id_solicitacao = row[0]
-            cnpj = row[1]
-            contab_descricao_value = row[6]
-            cod_contab_value = row[7]
-            total_parcelas_value = row[9]
-            tipo_pagamento_value = row[5]
-            natureza_financeira_value = row[8]
-            usa_rateio_centro_custo = row[14] #
-            valor_sg = row[15] # 
-            id_rateiocc = row[16]
-            obs = row[17]
-            rateios_aut = database.consultar_rateio_aut(id_rateiocc)
             notas_fiscais = database.consultar_nota_fiscal(id_solicitacao)
-            boletos = database.consultar_boleto(id_solicitacao)
             if notas_fiscais:
                 numerodocto = notas_fiscais[0][2]
                 serie_value = notas_fiscais[0][3]
@@ -727,35 +793,60 @@ class NbsRpa():
                 piscofinscsl = notas_fiscais[0][8]
                 iss = notas_fiscais[0][9]
                 vencimento_value = notas_fiscais[0][4]
+            wise_instance = Wise()
+            wise_instance.get_nf_values(numerodocto, id_solicitacao)
+            time.sleep(2)
+            wise_instance.save_as(numerodocto, id_solicitacao)
+            time.sleep(2)
+            self.back_to_nbs()
+            time.sleep(2)
+            wise_instance.fechar_aba()
+            time.sleep(2)
+            self.back_to_nbs()
+            empresa_atual = row[2]
+            if empresa_atual != empresa_anterior:
+                self.close_aplications_end()
+                time.sleep(3)
+                self.open_application()
+                self.login()
+                self.janela_empresa_filial(row[2], row[3])
+            empresa_anterior = empresa_atual
+            print(empresa_anterior, empresa_atual)
+            self.access_contas_a_pagar()
+            self.janela_entrada() 
+            cnpj = row[1]
+            contab_descricao_value = row[6]
+            cod_contab_value = row[7]
+            total_parcelas_value = row[9]
+            tipo_pagamento_value = row[5]
+            natureza_financeira_value = row[8]
+            usa_rateio_centro_custo = row[14] 
+            valor_sg = row[15] 
+            id_rateiocc = row[16]
+            obs = row[17]
+            rateios_aut = database.consultar_rateio_aut(id_rateiocc)
+            boletos = database.consultar_boleto(id_solicitacao)
             rateios = database.consultar_rateio(id_solicitacao)
             num_parcelas = database.numero_parcelas(id_solicitacao, numerodocto)
             numeroos = row[11]
             terceiro = row[12]
             estado = row[13]
-            self.janela_cadastro_nf(cnpj, numerodocto, serie_value, data_emissao_value, tipo_docto_value, valor_value, contab_descricao_value, total_parcelas_value, tipo_pagamento_value, natureza_financeira_value, numeroos, terceiro, estado, usa_rateio_centro_custo, valor_sg, rateios, rateios_aut, inss, irff, piscofinscsl, iss, vencimento_value, obs, cod_contab_value, boletos, num_parcelas)
-            # time.sleep(10)
+            self.janela_cadastro_nf(cnpj, numerodocto, serie_value, data_emissao_value, tipo_docto_value, valor_value, contab_descricao_value, total_parcelas_value, tipo_pagamento_value, natureza_financeira_value, numeroos, terceiro, estado, usa_rateio_centro_custo, valor_sg, rateios, rateios_aut, inss, irff, piscofinscsl, iss, vencimento_value, obs, cod_contab_value, boletos, num_parcelas, id_solicitacao)
             self.janela_imprimir_nota()
-            # time.sleep(5)
             self.janela_secundario_imprimir_nota()
-            # time.sleep(5)
             self.extract_pdf()
-            # time.sleep(3)
             self.save_as(numerodocto, id_solicitacao)
-            # time.sleep(5)
             self.close_extract_pdf_window()
             time.sleep(2)
             self.click_on_cancel()
-            # time.sleep(5)
             self.janela_valores()
             time.sleep(2)
             num_controle = self.get_controle_value()
             time.sleep(2)
             print(num_controle)
             time.sleep(5)
-            wise_instance = Wise()
-            time.sleep(3)
             wise_instance.Anexar_AP(id_solicitacao, num_controle, numerodocto)
-            # time.sleep(3)
+            time.sleep(2)
             wise_instance.get_pdf_file(numerodocto, id_solicitacao)
             time.sleep(4)
             wise_instance.confirm()
