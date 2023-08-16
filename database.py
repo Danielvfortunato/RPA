@@ -193,7 +193,6 @@ def consultar_rateio_aut(id_rateiocc):
         cursor.close()
         conn.close()
         return resultados    
-    
 
 def numero_parcelas(id_solicitacao, numerodocto):
     conn = conectar_banco_dados()
