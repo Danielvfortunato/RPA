@@ -8,8 +8,8 @@ from pywinauto import Application
 from pywinauto.findwindows import ElementNotFoundError
 import pyautogui
 from selenium.webdriver.support.select import Select
-from selenium.webdriver.chrome.service import Service
-import os
+# from selenium.webdriver.chrome.service import Service
+# import os
 import pygetwindow as gw
 
 class Wise():
@@ -163,3 +163,59 @@ class Wise():
             print("Botão clicado!")
         else:
             print("Botão não encontrado.")
+    
+    def get_nf_values(self, num_docto, id_solicitacao):
+        self.start_chrome_debugger()
+        self.init_instance_chrome()
+        time.sleep(2)
+        self.driver.get("https://gera.wisemanager.com.br/WiseManagerBI/#/financeiro/efetivacaoSolicitacaoGastoNew")
+        if self.driver.find_elements(By.NAME, "j_username") and self.driver.find_elements(By.NAME, "j_password"):
+            self.login()
+            time.sleep(10)
+        select_element = self.driver.find_element(By.CSS_SELECTOR, 'select.form-control.input-sm[ng-model="filtro.campo"]')
+        select = Select(select_element)
+        select.select_by_value('id')
+        time.sleep(3)
+        input_element = self.driver.find_element(By.CSS_SELECTOR, 'input.form-control.input-sm.filter-picker-round[ng-model="filtro.texto"]')
+        input_element.send_keys(id_solicitacao)
+        time.sleep(3)
+        search = self.driver.find_element(By.CSS_SELECTOR, 'button.btn.btn-circle.btn-bordered.thick.btn-primary.imt-5')
+        search.click()
+        time.sleep(10)
+        open_detail = self.driver.find_element(By.XPATH, "//button[contains(@ng-click, 'abreDetalheSolicitacao')]")
+        open_detail.click()
+        time.sleep(3)
+        numeros_docto = self.driver.find_elements(By.NAME, "numeroDocto")
+        link_elements = self.driver.find_elements(By.XPATH, "//a[contains(@ng-show, '.pdf') and contains(translate(@href, 'PDF', 'pdf'), '.pdf') and contains(@href, 'anexo/solicitacaoGasto')]")
+        for numero_docto, link_element in zip(numeros_docto, link_elements):
+            valor_docto = numero_docto.get_attribute('value')
+            if str(valor_docto) == str(num_docto) and link_element.is_displayed():
+                link_element.click()
+                break
+        time.sleep(4)
+        download = r"C:\Users\user\Documents\RPA_Project\imagens\download.PNG" 
+        self.click_specific_button_wise(download)
+
+    def save_as(self, num_docto, id_solicitacao):
+        title = "Salvar como"
+        if not self.esperar_janela_visivel(title, timeout=60):
+            print("Falha: Janela de salvar como não está visível.")
+            return
+        time.sleep(2)
+        try:
+            app = Application(backend='win32').connect(title=title)
+        except ElementNotFoundError:
+            print("Não foi possível se conectar com a janela Salvar como")
+            return 
+        janela = app[title]
+        get_document = r"C:\Users\user\Documents\RPA_Project\imagens\aps.PNG" 
+        self.click_specific_button_wise(get_document)
+        time.sleep(2)
+        file_name = janela.child_window(class_name="Edit")
+        file_name.type_keys(f"nota_{num_docto}{id_solicitacao}")
+        time.sleep(1)
+        pyautogui.press('enter')
+    
+    def fechar_aba(self):
+        pyautogui.hotkey('ctrl','w')
+
