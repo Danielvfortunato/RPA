@@ -171,13 +171,16 @@ class NbsRpa():
         natureza_despesa = janela.child_window(class_name="TwwDBLookupCombo", found_index=0)
         submit_button = janela.child_window(class_name="TPanel", found_index=0)
         barra_boleto = r"C:\Users\user\Documents\RPA_Project\imagens\Barra_Boleto.PNG"
+        aba_cfop = janela.child_window(title='CFOP´s', control_type='TabItem')
         # Set Comands
         cpf_cnpj.type_keys(cpf_cnpj_value)
         cpf_cnpj.type_keys("{ENTER}")
         esp.click_input()
         esp.type_keys(tipo_docto_value)
         num_nf.type_keys(num_nf_value)
-        sr.type_keys(serie_value)
+        serie = self.get_serie(num_nf_value, id_solicitacao)
+        # sr.type_keys(serie_value)
+        sr.type_keys(serie)
         data_emissao.type_keys(data_emissao_value)
         vlr_nf.type_keys(valor_value)
         time.sleep(1)
@@ -270,6 +273,31 @@ class NbsRpa():
         time.sleep(1)
         chave_nfe = janela.child_window(class_name='TDBEdit', found_index=6)
         chave_nfe.type_keys(chave_acesso)
+        time.sleep(2)
+        aba_cfop.click_input()
+        time.sleep(2)
+        inserir_natureza = r"C:\Users\user\Documents\RPA_Project\imagens\inserir_natureza.PNG"
+        self.click_specific_button(inserir_natureza)
+        time.sleep(2)
+        pyautogui.typewrite('1556')
+        time.sleep(2)
+        pesquisa_natureza = r"C:\Users\user\Documents\RPA_Project\imagens\pesquisa_natureza.PNG" 
+        self.click_specific_button(pesquisa_natureza)
+        time.sleep(1)
+        for _ in range(2):
+            pyautogui.press('tab')
+        pyautogui.press('enter')
+        time.sleep(2)
+        outros = janela.child_window(class_name='TOvcDbPictureField', found_index=15)
+        outros.click_input()
+        for _ in range(2):
+            pyautogui.press('tab')
+            time.sleep(0.5)
+        time.sleep(2)
+        pyautogui.typewrite(valor_value)
+        time.sleep(1)
+        adicionar_cfop = r"C:\Users\user\Documents\RPA_Project\imagens\adicionar_cfop.PNG"
+        self.click_specific_button(adicionar_cfop)
         ##### se for nota fiscal de produto
         tab_contab.click_input()
         excluir = r"C:\Users\user\Documents\RPA_Project\imagens\Excluir.PNG"
@@ -393,7 +421,7 @@ class NbsRpa():
             print("Não foi possível se conectar com a janela de cadastro de nf")
             return 
         janela = app[title] 
-        relacao_os = janela.child_window(control_type="TabItem", found_index=3)
+        relacao_os = janela.child_window(control_type="TabItem", title='Relação de OS')
         cadeado = r"C:\Users\user\Documents\RPA_Project\imagens\Cadeado.PNG"
         pesquisa_os = r"C:\Users\user\Documents\RPA_Project\imagens\Procura_Os.PNG"
         numero_os = janela.child_window(class_name="TOvcNumericField", found_index=0)
@@ -744,19 +772,23 @@ class NbsRpa():
         time.sleep(1)
         confirm.click_input()
     
+    def extract_text_from_pdf(self, num_docto, id_solicitacao):
+        pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+        caminho_pdf = rf"C:\Users\user\Documents\APs\nota_{num_docto}{id_solicitacao}.pdf"
+        imagens = convert_from_path(caminho_pdf)
+        texto_total = ""
+        for imagem in imagens:
+            texto = pytesseract.image_to_string(imagem)
+            if texto:
+                texto_total += texto + '\n'
+        return texto_total
+
+    def find_isolated_5102(self, text):
+        pattern = r'(?<!\d)5102(?!\d)'
+        result = re.search(pattern, text)
+        return True if result else False
+    
     def get_chave_acesso(self, num_docto, id_solicitacao):
-        # pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
-        # caminho_pdf = rf"C:\Users\user\Documents\APs\nota_{num_docto}{id_solicitacao}.pdf"
-        # imagens = convert_from_path(caminho_pdf)
-        # texto_total = ""
-        # for imagem in imagens:
-        #     texto = pytesseract.image_to_string(imagem)
-        #     if texto:
-        #         texto_total += texto + '\n'
-        # pattern = r'(\d{4} ){10}\d{4}'
-        # resultado = re.search(pattern, texto_total)
-        # chave_acesso = resultado.group().replace(' ', '') if resultado else "Chave de acesso não encontrada"
-        # return chave_acesso
         pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
         caminho_pdf = rf"C:\Users\user\Documents\APs\nota_{num_docto}{id_solicitacao}.pdf"
         imagens = convert_from_path(caminho_pdf)
@@ -775,6 +807,19 @@ class NbsRpa():
 
     def get_modelo(self, chave_acesso):
         return chave_acesso[20:22] if len(chave_acesso) > 21 else "Não foi possível extrair os números"
+    
+    def get_serie(self, num_docto, id_solicitacao):
+        pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+        caminho_pdf = rf"C:\Users\user\Documents\APs\nota_{num_docto}{id_solicitacao}.pdf"
+        imagens = convert_from_path(caminho_pdf)
+        texto_total = ""
+        for imagem in imagens:
+            texto = pytesseract.image_to_string(imagem)
+            if texto:
+                texto_total += texto + '\n'
+        serie_match = re.search(r's[ée]rie\s*[:\.\-\s]?\s*(\d+)', texto_total, re.IGNORECASE)
+        serie = serie_match.group(1) if serie_match else "Série não encontrada"
+        return serie
             
     def funcao_main(self):
         registros = database.consultar_dados_cadastro()
