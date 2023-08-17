@@ -17,7 +17,6 @@ def conectar_banco_dados():
 
 def consultar_dados_cadastro():
     conn = conectar_banco_dados()
-
     if conn is not None:
         cursor = conn.cursor()
         consulta = """
@@ -75,7 +74,6 @@ def consultar_dados_cadastro():
 
 def consultar_nota_fiscal(id_solicitacao):
     conn = conectar_banco_dados()
-
     if conn is not None:
         cursor = conn.cursor()
         consulta = """ 
@@ -107,7 +105,6 @@ def consultar_nota_fiscal(id_solicitacao):
     
 def consultar_boleto(id_solicitacao):
     conn = conectar_banco_dados()
-
     if conn is not None:
         cursor = conn.cursor()
         consulta = """ 
@@ -130,7 +127,6 @@ def consultar_boleto(id_solicitacao):
 
 def atualizar_anexosolicitacaogasto(numerodocto):
     conn = conectar_banco_dados()
-    
     if conn is not None:
         cursor = conn.cursor()
         update = """
@@ -151,7 +147,6 @@ def atualizar_anexosolicitacaogasto(numerodocto):
 
 def consultar_rateio(id_solicitacao):
     conn = conectar_banco_dados()
-
     if conn is not None:
         cursor = conn.cursor()
         query = """
@@ -175,7 +170,6 @@ def consultar_rateio(id_solicitacao):
 
 def consultar_rateio_aut(id_rateiocc):
     conn = conectar_banco_dados()
-
     if conn is not None:
         cursor = conn.cursor()
         query = """
@@ -193,10 +187,10 @@ def consultar_rateio_aut(id_rateiocc):
         cursor.close()
         conn.close()
         return resultados    
+    
 
 def numero_parcelas(id_solicitacao, numerodocto):
     conn = conectar_banco_dados()
-
     if conn is not None:
         cursor = conn.cursor()
         query = """
@@ -218,3 +212,21 @@ def numero_parcelas(id_solicitacao, numerodocto):
         cursor.close()
         conn.close()
         return resultados
+
+def autoriza_rpa_para_n(id_solicitacao):
+    conn = conectar_banco_dados()
+    if conn is not None:
+        cursor = conn.cursor()
+        update = """
+            UPDATE 
+                solicitacaoGasto
+            SET 
+                autorizaRpa = 'N'
+            WHERE 
+                solicitacaoGasto.id = %s
+        """
+        cursor.execute(update, (id_solicitacao,))
+        conn.commit()
+        cursor.close()
+        conn.close()
+        print("Atualização realizada com sucesso.")
