@@ -230,3 +230,44 @@ def autoriza_rpa_para_n(id_solicitacao):
         cursor.close()
         conn.close()
         print("Atualização realizada com sucesso.")
+
+
+def consultar_chat_id():
+    conn = conectar_banco_dados()
+    if conn is not None:
+        cursor = conn.cursor()
+        query = """
+            select 
+                idchattelegram 
+            from 
+                usuario 
+            where 
+                login = 'rpa'
+        """
+        cursor.execute(query)
+        resultados = cursor.fetchall()
+        # print("Resultados da consulta:", resultados)
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return resultados
+    
+def consultar_token_bot():
+    conn = conectar_banco_dados()
+    if conn is not None:
+        cursor = conn.cursor()
+        query = """
+            select 
+                chaveavisotelegram 
+            from 
+                sistema 
+            where 
+                chaveavisotelegram is not null
+        """
+        cursor.execute(query)
+        resultados = cursor.fetchall()
+        # print("Resultados da consulta:", resultados)
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return resultados
