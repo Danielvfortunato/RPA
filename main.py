@@ -10,6 +10,8 @@ from pytesseract import pytesseract
 from pdf2image import convert_from_path
 import datetime
 import requests 
+import pdfplumber
+import traceback
 
 class NbsRpa():
     
@@ -823,7 +825,24 @@ class NbsRpa():
         serie = serie_match.group(1) if serie_match else "Série não encontrada"
         return serie
     
-    def check_conditions(self, tipo_docto, chave_acesso, serie, natureza, vencimento, inss, irff, piscofinscsl, tipo_pagamento):
+    def get_valor_icms(self, num_docto, id_solicitacao):
+        caminho_pdf = rf"C:\Users\user\Documents\APs\nota_{num_docto}{id_solicitacao}.pdf"
+        texto_total = ""
+        with pdfplumber.open(caminho_pdf) as pdf:
+            for page in pdf.pages:
+                texto = page.extract_text()
+                if texto:
+                    texto_total += texto + '\n'
+        pattern = r'VALOR TOTAL DOS PRODUTOS\S*\s+([\d\.,]+)\s+([\d\.,]+)'
+        valor_icms_match = re.search(pattern, texto_total)
+        if valor_icms_match:
+            valor_string = valor_icms_match.group(2).replace('.', '').replace(',', '.')
+            valor_icms = float(valor_string)
+        else:
+            return False
+        return valor_icms
+    
+    def check_conditions(self, tipo_docto, chave_acesso, serie, natureza, vencimento, inss, irff, piscofinscsl, tipo_pagamento, icms):
         current_date = datetime.datetime.now()
         formatted_current_date = current_date.strftime('%d%m%Y') 
         if tipo_docto != "NFE":
@@ -832,6 +851,10 @@ class NbsRpa():
             return False, "chave de acesso não encontrada"
         if not serie:
             return False, "serie não encontrada"
+        if not icms:
+            return False, "icms nao encontrado"
+        if icms == 0.0:
+            return False, "icms zerado"
         if not natureza:
             return False, "natureza 5102 não encontrada"
         if int(vencimento) < int(formatted_current_date):
@@ -845,111 +868,141 @@ class NbsRpa():
         if tipo_pagamento not in ('B', 'A', 'P', 'D', 'E'):
             return False, "tipo de pagamento diferente do configurado"
         
-    def send_message(self, msg, id_solicitacao):
-        chat_id = '-995541913' 
-        base_url = f"https://api.telegram.org/bot6563290849:AAEVdZmaKFWOTmUdIYeAcGhq3_cUu4sX2qE/sendMessage"
+    def send_message_pre_verification(self, msg, id_solicitacao, numerodocto):
+        # chat_id = '-995541913' 
+        chat_id_result = database.consultar_chat_id()
+        token_result = database.consultar_token_bot()
+        chat_id = chat_id_result[0][0]
+        token = token_result[0][0]
+        # base_url = f"https://api.telegram.org/bot6563290849:AAEVdZmaKFWOTmUdIYeAcGhq3_cUu4sX2qE/sendMessage"
+        base_url = f"https://api.telegram.org/bot{token}/sendMessage"
         payload = {
             'chat_id': chat_id,
-            'text': f"[ERROR]: {msg}, id_solicitacao: {id_solicitacao}"
+            'text': f"[ERROR]: {msg}, id_solicitacao: {id_solicitacao}, numero_docto: {numerodocto}"
         }
         response = requests.post(base_url, data=payload)
         if response.status_code != 200:
             print(f"Failed to send message. Response: {response.content}")
         else:
             print("Message sent successfully to Telegram!")
+
+    def send_message_with_traceback(self, id_solicitacao, numerodocto):
+        chat_id_result = database.consultar_chat_id()
+        token_result = database.consultar_token_bot()
+        chat_id = chat_id_result[0][0]
+        token = token_result[0][0]
+        error_message = traceback.format_exc()
+        detailed_msg = f"[TRACEBACK ERROR]: {error_message}, id_solicitacao: {id_solicitacao}, numero_docto: {numerodocto}"
+        # chat_id = '-995541913' 
+        # base_url = f"https://api.telegram.org/bot6563290849:AAEVdZmaKFWOTmUdIYeAcGhq3_cUu4sX2qE/sendMessage"
+        base_url = f"https://api.telegram.org/bot{token}/sendMessage"
+        payload = {
+            'chat_id': chat_id,
+            'text': detailed_msg
+        }
+        response = requests.post(base_url, data=payload)
+        if response.status_code != 200:
+            print(f"Failed to send traceback message. Response: {response.content}")
+        else:
+            print("Traceback message sent successfully to Telegram!")
    
     def funcao_main(self):
         registros = database.consultar_dados_cadastro()
         empresa_anterior = None
         for row in registros:
-            id_solicitacao = row[0]
-            tipo_pagamento_value = row[5]
-            notas_fiscais = database.consultar_nota_fiscal(id_solicitacao)
-            if notas_fiscais:
-                numerodocto = notas_fiscais[0][2]
-                serie_value = notas_fiscais[0][3]
-                data_emissao_value = notas_fiscais[0][1] 
-                tipo_docto_value = notas_fiscais[0][5]
-                valor_value = notas_fiscais[0][0]
-                inss = notas_fiscais[0][6]
-                irff = notas_fiscais[0][7]
-                piscofinscsl = notas_fiscais[0][8]
-                iss = notas_fiscais[0][9]
-                vencimento_value = notas_fiscais[0][4]
-            wise_instance = Wise()
-            wise_instance.get_nf_values(numerodocto, id_solicitacao)
-            time.sleep(2)
-            wise_instance.save_as(numerodocto, id_solicitacao)
-            time.sleep(1)
-            chave_de_acesso_value = self.get_chave_acesso(numerodocto, id_solicitacao)
-            serie_nota = self.get_serie(numerodocto, id_solicitacao)
-            pdf_inteiro = self.extract_text_from_pdf(numerodocto, id_solicitacao)
-            natureza_value = self.find_isolated_5102(pdf_inteiro)
-            success, message = self.check_conditions(tipo_docto_value, chave_de_acesso_value, serie_nota, natureza_value, vencimento_value, inss, irff, piscofinscsl, tipo_pagamento_value)  
-            time.sleep(2)
-            self.back_to_nbs()
-            time.sleep(2)
-            wise_instance.fechar_aba()
-            time.sleep(2)
-            self.back_to_nbs()
-            if success:
-                    # self.send_message(message)
-                    # return  
-                empresa_atual = row[2]
-                if empresa_atual != empresa_anterior:
-                    self.close_aplications_end()
-                    time.sleep(3)
-                    self.open_application()
-                    self.login()
-                    self.janela_empresa_filial(row[2], row[3])
-                empresa_anterior = empresa_atual
-                print(empresa_anterior, empresa_atual)
-                self.access_contas_a_pagar()
-                self.janela_entrada() 
-                cnpj = row[1]
-                contab_descricao_value = row[6]
-                cod_contab_value = row[7]
-                total_parcelas_value = row[9]
-                natureza_financeira_value = row[8]
-                usa_rateio_centro_custo = row[14] 
-                valor_sg = row[15] 
-                id_rateiocc = row[16]
-                obs = row[17]
-                rateios_aut = database.consultar_rateio_aut(id_rateiocc)
-                boletos = database.consultar_boleto(id_solicitacao)
-                rateios = database.consultar_rateio(id_solicitacao)
-                num_parcelas = database.numero_parcelas(id_solicitacao, numerodocto)
-                numeroos = row[11]
-                terceiro = row[12]
-                estado = row[13]
-                self.janela_cadastro_nf(cnpj, numerodocto, serie_value, data_emissao_value, tipo_docto_value, valor_value, contab_descricao_value, total_parcelas_value, tipo_pagamento_value, natureza_financeira_value, numeroos, terceiro, estado, usa_rateio_centro_custo, valor_sg, rateios, rateios_aut, inss, irff, piscofinscsl, iss, vencimento_value, obs, cod_contab_value, boletos, num_parcelas, id_solicitacao)
-                self.janela_imprimir_nota()
-                self.janela_secundario_imprimir_nota()
-                self.extract_pdf()
-                self.save_as(numerodocto, id_solicitacao)
-                self.close_extract_pdf_window()
+            try:
+                id_solicitacao = row[0]
+                tipo_pagamento_value = row[5]
+                notas_fiscais = database.consultar_nota_fiscal(id_solicitacao)
+                if notas_fiscais:
+                    numerodocto = notas_fiscais[0][2]
+                    serie_value = notas_fiscais[0][3]
+                    data_emissao_value = notas_fiscais[0][1] 
+                    tipo_docto_value = notas_fiscais[0][5]
+                    valor_value = notas_fiscais[0][0]
+                    inss = notas_fiscais[0][6]
+                    irff = notas_fiscais[0][7]
+                    piscofinscsl = notas_fiscais[0][8]
+                    iss = notas_fiscais[0][9]
+                    vencimento_value = notas_fiscais[0][4]
+                wise_instance = Wise()
+                wise_instance.get_nf_values(numerodocto, id_solicitacao)
                 time.sleep(2)
-                self.click_on_cancel()
-                self.janela_valores()
+                wise_instance.save_as(numerodocto, id_solicitacao)
+                time.sleep(1)
+                chave_de_acesso_value = self.get_chave_acesso(numerodocto, id_solicitacao)
+                serie_nota = self.get_serie(numerodocto, id_solicitacao)
+                pdf_inteiro = self.extract_text_from_pdf(numerodocto, id_solicitacao)
+                natureza_value = self.find_isolated_5102(pdf_inteiro)
+                icms = self.get_valor_icms(numerodocto, id_solicitacao)
+                success, message = self.check_conditions(tipo_docto_value, chave_de_acesso_value, serie_nota, natureza_value, vencimento_value, inss, irff, piscofinscsl, tipo_pagamento_value, icms)  
                 time.sleep(2)
-                num_controle = self.get_controle_value()
-                time.sleep(2)
-                print(num_controle)
-                time.sleep(5)
-                wise_instance.Anexar_AP(id_solicitacao, num_controle, numerodocto)
-                time.sleep(2)
-                wise_instance.get_pdf_file(numerodocto, id_solicitacao)
-                time.sleep(4)
-                wise_instance.confirm()
-                time.sleep(3)
-                database.atualizar_anexosolicitacaogasto(numerodocto)
-                time.sleep(4)
                 self.back_to_nbs()
                 time.sleep(2)
-                self.close_aplications_half()
-                time.sleep(3)
+                wise_instance.fechar_aba()
+                time.sleep(2)
+                self.back_to_nbs()
+            except: 
+                self.send_message_with_traceback(id_solicitacao, numerodocto)
+            if success:
+                try:
+                    empresa_atual = row[2]
+                    if empresa_atual != empresa_anterior:
+                        self.close_aplications_end()
+                        time.sleep(3)
+                        self.open_application()
+                        self.login()
+                        self.janela_empresa_filial(row[2], row[3])
+                    empresa_anterior = empresa_atual
+                    print(empresa_anterior, empresa_atual)
+                    self.access_contas_a_pagar()
+                    self.janela_entrada() 
+                    cnpj = row[1]
+                    contab_descricao_value = row[6]
+                    cod_contab_value = row[7]
+                    total_parcelas_value = row[9]
+                    natureza_financeira_value = row[8]
+                    usa_rateio_centro_custo = row[14] 
+                    valor_sg = row[15] 
+                    id_rateiocc = row[16]
+                    obs = row[17]
+                    rateios_aut = database.consultar_rateio_aut(id_rateiocc)
+                    boletos = database.consultar_boleto(id_solicitacao)
+                    rateios = database.consultar_rateio(id_solicitacao)
+                    num_parcelas = database.numero_parcelas(id_solicitacao, numerodocto)
+                    numeroos = row[11]
+                    terceiro = row[12]
+                    estado = row[13]
+                    self.janela_cadastro_nf(cnpj, numerodocto, serie_value, data_emissao_value, tipo_docto_value, valor_value, contab_descricao_value, total_parcelas_value, tipo_pagamento_value, natureza_financeira_value, numeroos, terceiro, estado, usa_rateio_centro_custo, valor_sg, rateios, rateios_aut, inss, irff, piscofinscsl, iss, vencimento_value, obs, cod_contab_value, boletos, num_parcelas, id_solicitacao)
+                    self.janela_imprimir_nota()
+                    self.janela_secundario_imprimir_nota()
+                    self.extract_pdf()
+                    self.save_as(numerodocto, id_solicitacao)
+                    self.close_extract_pdf_window()
+                    time.sleep(2)
+                    self.click_on_cancel()
+                    self.janela_valores()
+                    time.sleep(2)
+                    num_controle = self.get_controle_value()
+                    time.sleep(2)
+                    print(num_controle)
+                    time.sleep(5)
+                    wise_instance.Anexar_AP(id_solicitacao, num_controle, numerodocto)
+                    time.sleep(2)
+                    wise_instance.get_pdf_file(numerodocto, id_solicitacao)
+                    time.sleep(4)
+                    wise_instance.confirm()
+                    time.sleep(3)
+                    database.atualizar_anexosolicitacaogasto(numerodocto)
+                    time.sleep(4)
+                    self.back_to_nbs()
+                    time.sleep(2)
+                    self.close_aplications_half()
+                    time.sleep(3)
+                except:
+                    self.send_message_with_traceback(id_solicitacao, numerodocto)
             else:
-                self.send_message(message, id_solicitacao)
+                self.send_message_pre_verification(message, id_solicitacao, numerodocto)
                 database.autoriza_rpa_para_n(id_solicitacao)
             
 rpa = NbsRpa()
