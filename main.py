@@ -137,11 +137,61 @@ class NbsRpa():
             print("Erro ao conectar com janela de entradas")
             return 
         janela = app[title]
-        # janela.wait('visible', timeout=120)
         janela.set_focus()
-        time.sleep(2)
-        button_image_path = r"C:\Users\user\Documents\RPA_Project\imagens\Inserir_Nota.PNG"
+        # time.sleep(2)
+        # button_image_path = r"C:\Users\user\Documents\RPA_Project\imagens\Inserir_Nota.PNG"
+        # self.click_specific_button(button_image_path)
+        time.sleep(1)
+        button_image_path = r"C:\Users\user\Documents\RPA_Project\imagens\nfe.PNG"
+        time.sleep(1)
         self.click_specific_button(button_image_path)
+
+    def importar_xml(self):
+        title = "Arquivos NFe: Interface de compra"
+        if not self.esperar_janela_visivel(title, timeout=60):
+            print("Falha: Janela de entradas não está visível.")
+            return
+        time.sleep(2)
+        try:
+            app = Application(backend="win32").connect(title=title)
+        except ElementNotFoundError:
+            print("Erro ao conectar com janela de arquivos nfe")
+            return 
+        janela = app[title]
+        janela.set_focus()
+        xml = r"C:\Users\user\Documents\RPA_Project\imagens\xml.PNG"
+        time.sleep(2)
+        self.click_specific_button(xml)
+
+    def abrir_xml(self, chave_acesso):
+        title = "Abrir"
+        if not self.esperar_janela_visivel(title, timeout=60):
+            print("Falha: Janela de entradas não está visível.")
+            return
+        time.sleep(2)
+        try:
+            app = Application(backend="uia").connect(title=title)
+        except ElementNotFoundError:
+            print("Erro ao conectar com janela de abrir")
+            return 
+        janela = app[title]
+        try:
+            get_document = janela.child_window(title="Downloads (fixo)")
+            get_document.click_input()  
+        except:
+            pass
+        time.sleep(2)
+        file_name = janela.child_window(class_name="Edit")
+        file_name.type_keys(chave_acesso)
+        time.sleep(1)
+        pyautogui.press('enter')
+        time.sleep(3)
+        pyautogui.typewrite('Hyundai_Diversos')
+        time.sleep(1)
+        pyautogui.press('enter')
+        time.sleep(2)
+        aceitar = r"C:\Users\user\Documents\RPA_Project\imagens\aceitar.PNG"
+        self.click_specific_button(aceitar)
 
     def janela_cadastro_nf(self, cpf_cnpj_value, num_nf_value, serie_value, data_emissao_value, tipo_docto_value, valor_value, contab_descricao_value, total_parcelas_value, tipo_pagamento_value, natureza_financeira_value, numeroos, terceiro, estado, usa_rateio_centro_custo, valor_sg, rateios, rateios_aut, inss, irff, piscofinscsl, iss, vencimento_value, obs, codigo_contab, boletos, num_parcelas, id_solicitacao):
         title = "Entrada Diversas / Operação: 52-Entrada Diversas"
@@ -183,7 +233,7 @@ class NbsRpa():
         esp.type_keys(tipo_docto_value)
         num_nf.type_keys(num_nf_value)
         serie = self.get_serie(num_nf_value, id_solicitacao)
-        # sr.type_keys(serie_value)
+        sr.type_keys(serie_value)
         sr.type_keys(serie)
         data_emissao.type_keys(data_emissao_value)
         vlr_nf.type_keys(valor_value)
@@ -827,21 +877,25 @@ class NbsRpa():
     
     def get_valor_icms(self, num_docto, id_solicitacao):
         caminho_pdf = rf"C:\Users\user\Documents\APs\nota_{num_docto}{id_solicitacao}.pdf"
-        texto_total = ""
+        texto_total = ""    
         with pdfplumber.open(caminho_pdf) as pdf:
             for page in pdf.pages:
                 texto = page.extract_text()
                 if texto:
                     texto_total += texto + '\n'
-        pattern = r'VALOR TOTAL DOS PRODUTOS\S*\s+([\d\.,]+)\s+([\d\.,]+)'
-        valor_icms_match = re.search(pattern, texto_total)
-        if valor_icms_match:
-            valor_string = valor_icms_match.group(2).replace('.', '').replace(',', '.')
-            valor_icms = float(valor_string)
+        patterns = [
+            r'(V\.|VALOR) TOTAL DOS PRODUTOS\S*\s+([\d\.,]+)\s+([\d\.,]+)',
+            r'(V\.|VALOR) TOTAL PRODUTOS\S*\s+([\d\.,]+)\s+([\d\.,]+)'      
+        ]
+        for pattern in patterns:
+            valor_icms_match = re.search(pattern, texto_total)
+            if valor_icms_match:
+                valor_string = valor_icms_match.group(3).replace('.', '').replace(',', '.')
+                valor_icms = float(valor_string)
+                return valor_icms
         else:
             return False
-        return valor_icms
-    
+        
     def check_conditions(self, tipo_docto, chave_acesso, serie, natureza, vencimento, inss, irff, piscofinscsl, tipo_pagamento, icms):
         current_date = datetime.datetime.now()
         formatted_current_date = current_date.strftime('%d%m%Y') 
@@ -851,10 +905,8 @@ class NbsRpa():
             return False, "chave de acesso não encontrada"
         if not serie:
             return False, "serie não encontrada"
-        if not icms:
-            return False, "icms nao encontrado"
-        if icms == 0.0:
-            return False, "icms zerado"
+        if not icms or icms == 0.0:
+            return False, "icms nao encontrado ou zerado"
         if not natureza:
             return False, "natureza 5102 não encontrada"
         if int(vencimento) < int(formatted_current_date):
@@ -867,6 +919,8 @@ class NbsRpa():
             return False, "piscofinscsl encontrado"
         if tipo_pagamento not in ('B', 'A', 'P', 'D', 'E'):
             return False, "tipo de pagamento diferente do configurado"
+        
+        return True, "Condições aceitas"
         
     def send_message_pre_verification(self, msg, id_solicitacao, numerodocto):
         # chat_id = '-995541913' 
@@ -910,100 +964,108 @@ class NbsRpa():
         registros = database.consultar_dados_cadastro()
         empresa_anterior = None
         for row in registros:
-            try:
-                id_solicitacao = row[0]
-                tipo_pagamento_value = row[5]
-                notas_fiscais = database.consultar_nota_fiscal(id_solicitacao)
-                if notas_fiscais:
-                    numerodocto = notas_fiscais[0][2]
-                    serie_value = notas_fiscais[0][3]
-                    data_emissao_value = notas_fiscais[0][1] 
-                    tipo_docto_value = notas_fiscais[0][5]
-                    valor_value = notas_fiscais[0][0]
-                    inss = notas_fiscais[0][6]
-                    irff = notas_fiscais[0][7]
-                    piscofinscsl = notas_fiscais[0][8]
-                    iss = notas_fiscais[0][9]
-                    vencimento_value = notas_fiscais[0][4]
-                wise_instance = Wise()
-                wise_instance.get_nf_values(numerodocto, id_solicitacao)
-                time.sleep(2)
-                wise_instance.save_as(numerodocto, id_solicitacao)
-                time.sleep(1)
-                chave_de_acesso_value = self.get_chave_acesso(numerodocto, id_solicitacao)
-                serie_nota = self.get_serie(numerodocto, id_solicitacao)
-                pdf_inteiro = self.extract_text_from_pdf(numerodocto, id_solicitacao)
-                natureza_value = self.find_isolated_5102(pdf_inteiro)
-                icms = self.get_valor_icms(numerodocto, id_solicitacao)
-                success, message = self.check_conditions(tipo_docto_value, chave_de_acesso_value, serie_nota, natureza_value, vencimento_value, inss, irff, piscofinscsl, tipo_pagamento_value, icms)  
-                time.sleep(2)
-                self.back_to_nbs()
-                time.sleep(2)
-                wise_instance.fechar_aba()
-                time.sleep(2)
-                self.back_to_nbs()
-            except: 
-                self.send_message_with_traceback(id_solicitacao, numerodocto)
-            if success:
-                try:
-                    empresa_atual = row[2]
-                    if empresa_atual != empresa_anterior:
-                        self.close_aplications_end()
-                        time.sleep(3)
-                        self.open_application()
-                        self.login()
-                        self.janela_empresa_filial(row[2], row[3])
-                    empresa_anterior = empresa_atual
-                    print(empresa_anterior, empresa_atual)
-                    self.access_contas_a_pagar()
-                    self.janela_entrada() 
-                    cnpj = row[1]
-                    contab_descricao_value = row[6]
-                    cod_contab_value = row[7]
-                    total_parcelas_value = row[9]
-                    natureza_financeira_value = row[8]
-                    usa_rateio_centro_custo = row[14] 
-                    valor_sg = row[15] 
-                    id_rateiocc = row[16]
-                    obs = row[17]
-                    rateios_aut = database.consultar_rateio_aut(id_rateiocc)
-                    boletos = database.consultar_boleto(id_solicitacao)
-                    rateios = database.consultar_rateio(id_solicitacao)
-                    num_parcelas = database.numero_parcelas(id_solicitacao, numerodocto)
-                    numeroos = row[11]
-                    terceiro = row[12]
-                    estado = row[13]
-                    self.janela_cadastro_nf(cnpj, numerodocto, serie_value, data_emissao_value, tipo_docto_value, valor_value, contab_descricao_value, total_parcelas_value, tipo_pagamento_value, natureza_financeira_value, numeroos, terceiro, estado, usa_rateio_centro_custo, valor_sg, rateios, rateios_aut, inss, irff, piscofinscsl, iss, vencimento_value, obs, cod_contab_value, boletos, num_parcelas, id_solicitacao)
-                    self.janela_imprimir_nota()
-                    self.janela_secundario_imprimir_nota()
-                    self.extract_pdf()
-                    self.save_as(numerodocto, id_solicitacao)
-                    self.close_extract_pdf_window()
-                    time.sleep(2)
-                    self.click_on_cancel()
-                    self.janela_valores()
-                    time.sleep(2)
-                    num_controle = self.get_controle_value()
-                    time.sleep(2)
-                    print(num_controle)
-                    time.sleep(5)
-                    wise_instance.Anexar_AP(id_solicitacao, num_controle, numerodocto)
-                    time.sleep(2)
-                    wise_instance.get_pdf_file(numerodocto, id_solicitacao)
-                    time.sleep(4)
-                    wise_instance.confirm()
-                    time.sleep(3)
-                    database.atualizar_anexosolicitacaogasto(numerodocto)
-                    time.sleep(4)
-                    self.back_to_nbs()
-                    time.sleep(2)
-                    self.close_aplications_half()
-                    time.sleep(3)
-                except:
-                    self.send_message_with_traceback(id_solicitacao, numerodocto)
-            else:
-                self.send_message_pre_verification(message, id_solicitacao, numerodocto)
-                database.autoriza_rpa_para_n(id_solicitacao)
+            # try:
+            id_empresa = row[18]
+            id_solicitacao = row[0]
+            tipo_pagamento_value = row[5]
+            notas_fiscais = database.consultar_nota_fiscal(id_solicitacao)
+            if notas_fiscais:
+                numerodocto = notas_fiscais[0][2]
+                serie_value = notas_fiscais[0][3]
+                data_emissao_value = notas_fiscais[0][1] 
+                tipo_docto_value = notas_fiscais[0][5]
+                valor_value = notas_fiscais[0][0]
+                inss = notas_fiscais[0][6]
+                irff = notas_fiscais[0][7]
+                piscofinscsl = notas_fiscais[0][8]
+                iss = notas_fiscais[0][9]
+                vencimento_value = notas_fiscais[0][4]
+            wise_instance = Wise()
+            wise_instance.get_nf_values(numerodocto, id_solicitacao)
+            time.sleep(2)
+            wise_instance.save_as(numerodocto, id_solicitacao)
+            time.sleep(1)
+            chave_de_acesso_value = self.get_chave_acesso(numerodocto, id_solicitacao)
+            print(chave_de_acesso_value)
+            serie_nota = self.get_serie(numerodocto, id_solicitacao)
+            pdf_inteiro = self.extract_text_from_pdf(numerodocto, id_solicitacao)
+            natureza_value = self.find_isolated_5102(pdf_inteiro)
+            icms = self.get_valor_icms(numerodocto, id_solicitacao)
+            success, message = self.check_conditions(tipo_docto_value, chave_de_acesso_value, serie_nota, natureza_value, vencimento_value, inss, irff, piscofinscsl, tipo_pagamento_value, icms)  
+            time.sleep(3)
+            self.back_to_nbs()
+            time.sleep(2)
+            wise_instance.fechar_aba()
+            time.sleep(5)
+            wise_instance.get_xml_fazenda(chave_de_acesso_value, id_empresa)
+            time.sleep(2)
+            wise_instance.fechar_aba()
+            time.sleep(1)
+            self.back_to_nbs()
+            # except: 
+                # self.send_message_with_traceback(id_solicitacao, numerodocto)
+            # if success:
+                # try:
+            empresa_atual = row[2]
+            if empresa_atual != empresa_anterior:
+                self.close_aplications_end()
+                time.sleep(3)
+                self.open_application()
+                self.login()
+                self.janela_empresa_filial(row[2], row[3])
+            empresa_anterior = empresa_atual
+            print(empresa_anterior, empresa_atual)
+            self.access_contas_a_pagar()
+            self.janela_entrada()
+            self.importar_xml()
+            self.abrir_xml(chave_de_acesso_value)
+            cnpj = row[1]
+            contab_descricao_value = row[6]
+            cod_contab_value = row[7]
+            total_parcelas_value = row[9]
+            natureza_financeira_value = row[8]
+            usa_rateio_centro_custo = row[14] 
+            valor_sg = row[15] 
+            id_rateiocc = row[16]
+            obs = row[17]
+            rateios_aut = database.consultar_rateio_aut(id_rateiocc)
+            boletos = database.consultar_boleto(id_solicitacao)
+            rateios = database.consultar_rateio(id_solicitacao)
+            num_parcelas = database.numero_parcelas(id_solicitacao, numerodocto)
+            numeroos = row[11]
+            terceiro = row[12]
+            estado = row[13]
+            self.janela_cadastro_nf(cnpj, numerodocto, serie_value, data_emissao_value, tipo_docto_value, valor_value, contab_descricao_value, total_parcelas_value, tipo_pagamento_value, natureza_financeira_value, numeroos, terceiro, estado, usa_rateio_centro_custo, valor_sg, rateios, rateios_aut, inss, irff, piscofinscsl, iss, vencimento_value, obs, cod_contab_value, boletos, num_parcelas, id_solicitacao)
+            self.janela_imprimir_nota()
+            self.janela_secundario_imprimir_nota()
+            self.extract_pdf()
+            self.save_as(numerodocto, id_solicitacao)
+            self.close_extract_pdf_window()
+            time.sleep(2)
+            self.click_on_cancel()
+            self.janela_valores()
+            time.sleep(2)
+            num_controle = self.get_controle_value()
+            time.sleep(2)
+            print(num_controle)
+            time.sleep(5)
+            wise_instance.Anexar_AP(id_solicitacao, num_controle, numerodocto)
+            time.sleep(2)
+            wise_instance.get_pdf_file(numerodocto, id_solicitacao)
+            time.sleep(4)
+            wise_instance.confirm()
+            time.sleep(3)
+            database.atualizar_anexosolicitacaogasto(numerodocto)
+            time.sleep(4)
+            self.back_to_nbs()
+            time.sleep(2)
+            self.close_aplications_half()
+            time.sleep(3)
+            #     except:
+            #         self.send_message_with_traceback(id_solicitacao, numerodocto)
+            # else:
+            #     self.send_message_pre_verification(message, id_solicitacao, numerodocto)
+            #     database.autoriza_rpa_para_n(id_solicitacao)
             
 rpa = NbsRpa()
 rpa.funcao_main()
