@@ -39,6 +39,7 @@ def consultar_dados_cadastro():
                 , sg.valor as valorSg
                 , sg.idrateiocc 
                 , sg.historico
+                , ep.id
             FROM 
                 solicitacaoGasto sg
                 , cliente cl
