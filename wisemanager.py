@@ -243,9 +243,9 @@ class Wise():
         for _ in range(3):
             pyautogui.press('tab')
         pyautogui.press('enter')
-        time.sleep(1)
+        time.sleep(3)
         pyautogui.press('enter')
-        time.sleep(2)
+        time.sleep(3)
         if id_empresa == 6:
             pyautogui.press('enter')
         elif id_empresa == 29:
