@@ -12,6 +12,7 @@ import datetime
 import requests 
 import pdfplumber
 import traceback
+import xml.etree.ElementTree as ET
 
 class NbsRpa():
     
@@ -193,7 +194,7 @@ class NbsRpa():
         aceitar = r"C:\Users\user\Documents\RPA_Project\imagens\aceitar.PNG"
         self.click_specific_button(aceitar)
 
-    def janela_cadastro_nf(self, cpf_cnpj_value, num_nf_value, serie_value, data_emissao_value, tipo_docto_value, valor_value, contab_descricao_value, total_parcelas_value, tipo_pagamento_value, natureza_financeira_value, numeroos, terceiro, estado, usa_rateio_centro_custo, valor_sg, rateios, rateios_aut, inss, irff, piscofinscsl, iss, vencimento_value, obs, codigo_contab, boletos, num_parcelas, id_solicitacao):
+    def janela_cadastro_nf(self, cpf_cnpj_value, num_nf_value, serie_value, data_emissao_value, tipo_docto_value, valor_value, contab_descricao_value, total_parcelas_value, tipo_pagamento_value, natureza_financeira_value, numeroos, terceiro, estado, usa_rateio_centro_custo, valor_sg, rateios, rateios_aut, inss, irff, piscofinscsl, iss, vencimento_value, obs, codigo_contab, boletos, num_parcelas, id_solicitacao, chave_acesso):
         title = "Entrada Diversas / Operação: 52-Entrada Diversas"
         if not self.esperar_janela_visivel(title, timeout=60):
             print("Falha: Janela de cadastro_nf não está visível.")
@@ -227,16 +228,16 @@ class NbsRpa():
         barra_boleto = r"C:\Users\user\Documents\RPA_Project\imagens\Barra_Boleto.PNG"
         aba_cfop = janela.child_window(title='CFOP´s', control_type='TabItem')
         # Set Comands
-        cpf_cnpj.type_keys(cpf_cnpj_value)
-        cpf_cnpj.type_keys("{ENTER}")
-        esp.click_input()
-        esp.type_keys(tipo_docto_value)
-        num_nf.type_keys(num_nf_value)
-        serie = self.get_serie(num_nf_value, id_solicitacao)
-        sr.type_keys(serie_value)
-        sr.type_keys(serie)
-        data_emissao.type_keys(data_emissao_value)
-        vlr_nf.type_keys(valor_value)
+        # cpf_cnpj.type_keys(cpf_cnpj_value)
+        # cpf_cnpj.type_keys("{ENTER}")
+        # esp.click_input()
+        # esp.type_keys(tipo_docto_value)
+        # num_nf.type_keys(num_nf_value)
+        # serie = self.get_serie(num_nf_value, id_solicitacao)
+        # sr.type_keys(serie_value)
+        # sr.type_keys(serie)
+        # data_emissao.type_keys(data_emissao_value)
+        # vlr_nf.type_keys(valor_value)
         time.sleep(1)
         if inss is not None or irff is not None or piscofinscsl is not None or iss is not None:
             if inss > 0 or irff > 0 or piscofinscsl > 0 or iss > 0:
@@ -251,107 +252,134 @@ class NbsRpa():
         observacao.click_input()
         time.sleep(1)
         pyautogui.typewrite(obs)
+        natureza_financeira_list = ['ALUGUEIS A PAGAR', 'COMBUSTÍVEIS/ LUBRIFICANTES', 'CUSTO COMBUSTIVEL NOVOS', 'CUSTO DESPACHANTE NOVOS', 'CUSTO FRETE NOVOS', 'CUSTO NOVOS', 'CUSTO OFICINA', 'DESP DESPACHANTE NOVOS', 'DESP FRETE VEIC NOVOS', 'DESP. COM SERVICOS DE OFICINA', 'DESPESA COM LAVACAO', 'DESPESA OFICINA', 'ENERGIA ELETRICA', 'FRETE', 'HONORARIO PESSOA JURIDICA', 'INFORMATICA HARDWARE', 'INFORMATICA SOFTWARE', 'INTERNET', 'MANUT. E CONSERV. DE', 'MATERIAL DE OFICINA DESPESA', 'PONTO ELETRONICO RA', 'SALARIO ERIBERTO', 'SALARIO MAGU', 'SALARIO VIVIANE', 'SALARIOS RA', 'SERVICO DE TERCEIROS FUNILARIA', 'SERVICOS DE TERCEIRO OFICINA', 'SOFTWARE', 'VALE TRANSPORTE RA', 'VD SALARIO', 'VD VEICULOS NOVOS', 'VIAGENS E ESTADIAS', 'AÇÕES EXTERNAS', 'AÇÕES LOJA', 'ADESIVOS', 'AGENCIA', 'BRINDES E CORTESIAS', 'DECORAÇÃO', 'DESENSOLVIMENTO SITE', 'DESP MKT CHERY FLORIPA', 'DISPARO SMS/WHATS', 'EVENTOS', 'EXPOSITORES', 'FACEBOOK', 'FACEBOOK/INSTAGRAM', 'FEE MENSAL', 'FEIRA/EVENTOS', 'FEIRAO', 'FOLLOWISE (MKT)', 'GOOGLE', 'INFLUENCIADORES', 'INSTITUCIONAL', 'INTEGRADOR (MKT)', 'JORNAL', 'LANCAMENTOS', 'LED', 'MARKETING', 'MERCADO LIVRE', 'MIDIA ON OUTROS', 'MIDIA/ONLINE', 'MKT', 'OUTDOOR', 'PANFLETOS', 'PATROCINIO', 'PORTAL GERACAO', 'PROSPECÇÃO', 'PUBLICIDADE E PROPAGANDA', 'RADIO', 'RD (MKT)', 'REGISTRO SITE', 'SISTEMAS (MKT)', 'SYONET AUTOMOVEIS', 'TELEVISAO', 'VENDAS EXTERNAS', 'VIDEOS', 'VITRINE', 'WISE (MKT)']
+        if natureza_financeira_value in natureza_financeira_list:
+            time.sleep(2)
+            check_pis_cofins = janela.child_window(class_name="TCheckBox", found_index=0)
+            check_pis_cofins.click_input()
+            time.sleep(2)
+            tab_natureza_credito = janela.child_window(title='Natureza Créditos Pis/Cofins', control_type='TabItem')
+            tab_natureza_credito.click_input()
+            time.sleep(1)
+            nat_text = janela.child_window(class_name='TwwDBLookupCombo', found_index=1)
+            nat_text.click_input()
+            time.sleep(1)
+            pyautogui.typewrite('Aquisicao de bens utilizados como insumo')
+            pyautogui.press('enter')
         # se for nota fiscal de produto 
-        habilitar_livro = janela.child_window(title='Quero esta nota no livro fiscal')
-        time.sleep(2)
-        habilitar_livro.click_input()
-        chave_acesso = self.get_chave_acesso(num_nf_value, id_solicitacao)
-        modelo = self.get_modelo(chave_acesso)
-        time.sleep(2)
-        janela_chave_modelo = janela.child_window(title="Modelo Fiscal / Chave e Outros")
-        janela_chave_modelo.click_input()
-        time.sleep(1)
-        modelo_fiscal = janela.child_window(class_name='TwwDBLookupCombo', found_index=0)
-        modelo_fiscal.click_input()
-        time.sleep(1)
-        if modelo == '55':
-            modelo_fiscal.click_input()
-            time.sleep(1)
-            pyautogui.typewrite('nota fiscal eletronica')
-        elif modelo == '10':
-            modelo_fiscal.click_input()
-            time.sleep(1)
-            pyautogui.typewrite('Conhecimento Aereo')
-        elif modelo == '67':
-            modelo_fiscal.click_input()
-            time.sleep(1)
-            pyautogui.typewrite('Conhecimento de transp eletronico')
-        elif modelo == '9':
-            modelo_fiscal.click_input()
-            time.sleep(1)
-            pyautogui.typewrite('Conhecimento de Transporte Aquaviario de cargas')
-        elif modelo == '57':
-            modelo_fiscal.click_input()
-            time.sleep(1)
-            pyautogui.typewrite('Conhecimento de transporte eletronico - CT-e')
-        elif modelo == '11':
-            modelo_fiscal.click_input()
-            time.sleep(1)
-            pyautogui.typewrite('Conhecimento de Transporte Ferroviario de Cargas')
-        elif modelo == '8':
-            modelo_fiscal.click_input()
-            time.sleep(1)
-            pyautogui.typewrite('Conhecimento de Transporte Rodoviario de cargas')
-        elif modelo == '1B':
-            modelo_fiscal.click_input()
-            time.sleep(1)
-            pyautogui.typewrite('NOTA FISCAL AVULSA')
-        elif modelo == '66':
-            modelo_fiscal.click_input()
-            time.sleep(1)
-            pyautogui.typewrite('NOTA FISCAL DE ENERGIA ELETRICA ELETRONICA')
-        elif modelo == '29':
-            modelo_fiscal.click_input()
-            time.sleep(1)
-            pyautogui.typewrite('Nota Fiscal/Conta de Fornecimento')
-        elif modelo == '1':
-            modelo_fiscal.click_input()
-            time.sleep(1)
-            pyautogui.typewrite('NotaFiscal')
-        elif modelo == '21':
-            modelo_fiscal.click_input()
-            time.sleep(1)
-            pyautogui.typewrite('NotaFiscal de Servico de Comunicacao')
-        elif modelo == '22':
-            modelo_fiscal.click_input()
-            time.sleep(1)
-            pyautogui.typewrite('NotaFiscal de Servico de Telecomunicacoes')
-        elif modelo == '7':
-            modelo_fiscal.click_input()
-            time.sleep(1)
-            pyautogui.typewrite('NotaFiscal de Servico de Transporte')
-        elif modelo == '6':
-            modelo_fiscal.click_input()
-            time.sleep(1)
-            pyautogui.typewrite('NotaFiscal/Conta de Energia Eletrica')
-        time.sleep(1)
-        chave_nfe = janela.child_window(class_name='TDBEdit', found_index=6)
-        chave_nfe.type_keys(chave_acesso)
+        # habilitar_livro = janela.child_window(title='Quero esta nota no livro fiscal')
+        # time.sleep(2)
+        # habilitar_livro.click_input()
+        # chave_acesso = self.get_chave_acesso(num_nf_value, id_solicitacao)
+        # modelo = self.get_modelo(chave_acesso)
+        # time.sleep(2)
+        # janela_chave_modelo = janela.child_window(title="Modelo Fiscal / Chave e Outros")
+        # janela_chave_modelo.click_input()
+        # time.sleep(1)
+        # modelo_fiscal = janela.child_window(class_name='TwwDBLookupCombo', found_index=0)
+        # modelo_fiscal.click_input()
+        # time.sleep(1)
+        # if modelo == '55':
+        #     modelo_fiscal.click_input()
+        #     time.sleep(1)
+        #     pyautogui.typewrite('nota fiscal eletronica')
+        # elif modelo == '10':
+        #     modelo_fiscal.click_input()
+        #     time.sleep(1)
+        #     pyautogui.typewrite('Conhecimento Aereo')
+        # elif modelo == '67':
+        #     modelo_fiscal.click_input()
+        #     time.sleep(1)
+        #     pyautogui.typewrite('Conhecimento de transp eletronico')
+        # elif modelo == '9':
+        #     modelo_fiscal.click_input()
+        #     time.sleep(1)
+        #     pyautogui.typewrite('Conhecimento de Transporte Aquaviario de cargas')
+        # elif modelo == '57':
+        #     modelo_fiscal.click_input()
+        #     time.sleep(1)
+        #     pyautogui.typewrite('Conhecimento de transporte eletronico - CT-e')
+        # elif modelo == '11':
+        #     modelo_fiscal.click_input()
+        #     time.sleep(1)
+        #     pyautogui.typewrite('Conhecimento de Transporte Ferroviario de Cargas')
+        # elif modelo == '8':
+        #     modelo_fiscal.click_input()
+        #     time.sleep(1)
+        #     pyautogui.typewrite('Conhecimento de Transporte Rodoviario de cargas')
+        # elif modelo == '1B':
+        #     modelo_fiscal.click_input()
+        #     time.sleep(1)
+        #     pyautogui.typewrite('NOTA FISCAL AVULSA')
+        # elif modelo == '66':
+        #     modelo_fiscal.click_input()
+        #     time.sleep(1)
+        #     pyautogui.typewrite('NOTA FISCAL DE ENERGIA ELETRICA ELETRONICA')
+        # elif modelo == '29':
+        #     modelo_fiscal.click_input()
+        #     time.sleep(1)
+        #     pyautogui.typewrite('Nota Fiscal/Conta de Fornecimento')
+        # elif modelo == '1':
+        #     modelo_fiscal.click_input()
+        #     time.sleep(1)
+        #     pyautogui.typewrite('NotaFiscal')
+        # elif modelo == '21':
+        #     modelo_fiscal.click_input()
+        #     time.sleep(1)
+        #     pyautogui.typewrite('NotaFiscal de Servico de Comunicacao')
+        # elif modelo == '22':
+        #     modelo_fiscal.click_input()
+        #     time.sleep(1)
+        #     pyautogui.typewrite('NotaFiscal de Servico de Telecomunicacoes')
+        # elif modelo == '7':
+        #     modelo_fiscal.click_input()
+        #     time.sleep(1)
+        #     pyautogui.typewrite('NotaFiscal de Servico de Transporte')
+        # elif modelo == '6':
+        #     modelo_fiscal.click_input()
+        #     time.sleep(1)
+        #     pyautogui.typewrite('NotaFiscal/Conta de Energia Eletrica')
+        # time.sleep(1)
+        # chave_nfe = janela.child_window(class_name='TDBEdit', found_index=6)
+        # chave_nfe.type_keys(chave_acesso)
         time.sleep(2)
         aba_cfop.click_input()
         time.sleep(2)
-        inserir_natureza = r"C:\Users\user\Documents\RPA_Project\imagens\inserir_natureza.PNG"
-        self.click_specific_button(inserir_natureza)
-        time.sleep(2)
-        pyautogui.typewrite('1556')
-        time.sleep(2)
-        pesquisa_natureza = r"C:\Users\user\Documents\RPA_Project\imagens\pesquisa_natureza.PNG" 
-        self.click_specific_button(pesquisa_natureza)
-        time.sleep(1)
-        for _ in range(2):
-            pyautogui.press('tab')
-        pyautogui.press('enter')
-        time.sleep(2)
-        outros = janela.child_window(class_name='TOvcDbPictureField', found_index=15)
-        outros.click_input()
-        for _ in range(2):
-            pyautogui.press('tab')
-            time.sleep(0.5)
-        time.sleep(2)
-        pyautogui.typewrite(valor_value)
-        time.sleep(1)
-        adicionar_cfop = r"C:\Users\user\Documents\RPA_Project\imagens\adicionar_cfop.PNG"
-        self.click_specific_button(adicionar_cfop)
+        CFOP_MAPPING = {
+            '5102': '1556',
+            '6102': '2556',
+            '5403': '1407',
+            '5656': '1407',
+            '5405': '1407'
+        }
+        #
+        cfop_results = self.get_data_from_xml(chave_acesso)
+        for item in cfop_results:
+            cfop = item['CFOP']
+            mapped_value = CFOP_MAPPING.get(cfop, None)
+            if mapped_value:
+                inserir_natureza = r"C:\Users\user\Documents\RPA_Project\imagens\inserir_natureza.PNG"
+                self.click_specific_button(inserir_natureza)
+                time.sleep(2)
+                pyautogui.typewrite(mapped_value)
+                time.sleep(2)
+                pesquisa_natureza = r"C:\Users\user\Documents\RPA_Project\imagens\pesquisa_natureza.PNG" 
+                self.click_specific_button(pesquisa_natureza)
+                time.sleep(1)
+                for _ in range(2):
+                    pyautogui.press('tab')
+                pyautogui.press('enter')
+                time.sleep(2)
+                outros = janela.child_window(class_name='TOvcDbPictureField', found_index=15)
+                outros.click_input()
+                for _ in range(2):
+                    pyautogui.press('tab')
+                    time.sleep(0.5)
+                time.sleep(2)
+                pyautogui.typewrite(valor_value)
+                time.sleep(1)
+                adicionar_cfop = r"C:\Users\user\Documents\RPA_Project\imagens\adicionar_cfop.PNG"
+                self.click_specific_button(adicionar_cfop)
         ##### se for nota fiscal de produto
         tab_contab.click_input()
         excluir = r"C:\Users\user\Documents\RPA_Project\imagens\Excluir.PNG"
@@ -411,7 +439,7 @@ class NbsRpa():
         elif tipo_pagamento_value in ('P','D'):
             pyautogui.typewrite('Deposito')
             pyautogui.press('tab')
-        elif tipo_pagamento_value in ('E'):
+        elif tipo_pagamento_value in ('E', 'C'):
             pyautogui.typewrite('Especie')
             pyautogui.press('tab')
         natureza_despesa.click_input()
@@ -715,8 +743,11 @@ class NbsRpa():
                 time.sleep(1)
                 contacontabil.type_keys(conta_contabil)
                 pyautogui.press("tab")
-                time.sleep(1)
-                centro_custo.type_keys(rateio[0]) 
+                time.sleep(2)
+                try:
+                    centro_custo.type_keys(rateio[0]) 
+                except:
+                    pass
                 time.sleep(1)
                 historico_padrao.click_input()
                 pyautogui.typewrite("85")
@@ -731,8 +762,11 @@ class NbsRpa():
                 self.click_specific_button(incluir)
                 contacontabil.type_keys(conta_contabil)
                 pyautogui.press("tab")
-                time.sleep(1)
-                centro_custo.type_keys(rateio_aut[0]) 
+                time.sleep(2)
+                try:
+                    centro_custo.type_keys(rateio_aut[0]) 
+                except:
+                    pass
                 time.sleep(1)
                 historico_padrao.click_input()
                 pyautogui.typewrite("85")
@@ -837,10 +871,10 @@ class NbsRpa():
                 texto_total += texto + '\n'
         return texto_total
 
-    def find_isolated_5102(self, text):
-        pattern = r'(?<!\d)5102(?!\d)'
-        result = re.search(pattern, text)
-        return True if result else False
+    # def find_isolated_5102(self, text):
+    #     pattern = r'(?<!\d)5102(?!\d)'
+    #     result = re.search(pattern, text)
+    #     return True if result else False
     
     def get_chave_acesso(self, num_docto, id_solicitacao):
         pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
@@ -895,29 +929,43 @@ class NbsRpa():
                 return valor_icms
         else:
             return False
+    
+    def convert_to_date(self, number):
+        str_num = str(number)
+        day = int(str_num[:2])
+        month = int(str_num[2:4])
+        year = int(str_num[4:])
+        return datetime.date(year, month, day) 
         
-    def check_conditions(self, tipo_docto, chave_acesso, serie, natureza, vencimento, inss, irff, piscofinscsl, tipo_pagamento, icms):
-        current_date = datetime.datetime.now()
-        formatted_current_date = current_date.strftime('%d%m%Y') 
-        if tipo_docto != "NFE":
-            return False, "Tipo de documento inválido"
+    def check_conditions(self, tipo_docto, chave_acesso, serie, natureza, vencimento, inss, irff, piscofinscsl, tipo_pagamento, icms, boletos):
+        current_date = datetime.date.today()  # Pegando apenas a data, sem hora, minuto, segundo, etc.
+        converted_vencimento = self.convert_to_date(vencimento)
+        # if tipo_docto != "NFE":
+        #     return False, "Tipo de documento inválido"
         if not chave_acesso:
             return False, "chave de acesso não encontrada"
-        if not serie:
-            return False, "serie não encontrada"
-        if not icms or icms == 0.0:
-            return False, "icms nao encontrado ou zerado"
-        if not natureza:
-            return False, "natureza 5102 não encontrada"
-        if int(vencimento) < int(formatted_current_date):
-            return False, "vencimento menor que data de efetivacao"
+        # if not serie:
+        #     return False, "serie não encontrada"
+        # if not icms or icms == 0.0:
+        #     return False, "icms nao encontrado ou zerado"
+        # if not natureza:
+        #     return False, "natureza 5102 não encontrada"
+        if tipo_pagamento == 'B':
+            for boleto in boletos:
+                converted_boleto_date = self.convert_to_date(boleto[0])
+                if converted_boleto_date < current_date:
+                    return False, "O primeiro boleto tem vencimento anterior à data atual"
+                break 
+        elif tipo_pagamento != 'B':
+            if converted_vencimento < current_date:
+                return False, "vencimento menor que data de efetivacao"
         if inss:
             return False, "inss encontrado"
         if irff:
             return False, "irff encontrado"
         if piscofinscsl:
             return False, "piscofinscsl encontrado"
-        if tipo_pagamento not in ('B', 'A', 'P', 'D', 'E'):
+        if tipo_pagamento not in ('B', 'A', 'P', 'D', 'E', 'C'):
             return False, "tipo de pagamento diferente do configurado"
         
         return True, "Condições aceitas"
@@ -959,6 +1007,28 @@ class NbsRpa():
             print(f"Failed to send traceback message. Response: {response.content}")
         else:
             print("Traceback message sent successfully to Telegram!")
+
+    def get_data_from_xml(self, chave_acesso):
+        path = rf'C:\Users\user\Downloads\{chave_acesso}.xml'
+        tree = ET.parse(path)
+        root = tree.getroot()
+        ns = None
+        for elem in root.iter():
+            if '}' in elem.tag:
+                ns = {'ns': elem.tag.split('}')[0].strip('{')}
+                break
+        if ns is None:
+            raise ValueError("Namespace não encontrado no XML.")
+        
+        unique_cfops = set()
+        det_elements = root.findall('.//ns:det', namespaces=ns)
+        for det in det_elements:
+            cfop = det.find('.//ns:CFOP', namespaces=ns)
+            if cfop is not None:
+                unique_cfops.add(cfop.text)
+
+        results = [{'CFOP': cfop} for cfop in unique_cfops]
+        return results
    
     def funcao_main(self):
         registros = database.consultar_dados_cadastro()
@@ -991,81 +1061,86 @@ class NbsRpa():
             pdf_inteiro = self.extract_text_from_pdf(numerodocto, id_solicitacao)
             natureza_value = self.find_isolated_5102(pdf_inteiro)
             icms = self.get_valor_icms(numerodocto, id_solicitacao)
-            success, message = self.check_conditions(tipo_docto_value, chave_de_acesso_value, serie_nota, natureza_value, vencimento_value, inss, irff, piscofinscsl, tipo_pagamento_value, icms)  
-            time.sleep(3)
-            self.back_to_nbs()
-            time.sleep(2)
-            wise_instance.fechar_aba()
-            time.sleep(5)
-            wise_instance.get_xml_fazenda(chave_de_acesso_value, id_empresa)
-            time.sleep(2)
-            wise_instance.fechar_aba()
-            time.sleep(1)
-            self.back_to_nbs()
-            # except: 
-                # self.send_message_with_traceback(id_solicitacao, numerodocto)
-            # if success:
-                # try:
-            empresa_atual = row[2]
-            if empresa_atual != empresa_anterior:
-                self.close_aplications_end()
-                time.sleep(3)
-                self.open_application()
-                self.login()
-                self.janela_empresa_filial(row[2], row[3])
-            empresa_anterior = empresa_atual
-            print(empresa_anterior, empresa_atual)
-            self.access_contas_a_pagar()
-            self.janela_entrada()
-            self.importar_xml()
-            self.abrir_xml(chave_de_acesso_value)
-            cnpj = row[1]
-            contab_descricao_value = row[6]
-            cod_contab_value = row[7]
-            total_parcelas_value = row[9]
-            natureza_financeira_value = row[8]
-            usa_rateio_centro_custo = row[14] 
-            valor_sg = row[15] 
-            id_rateiocc = row[16]
-            obs = row[17]
-            rateios_aut = database.consultar_rateio_aut(id_rateiocc)
             boletos = database.consultar_boleto(id_solicitacao)
-            rateios = database.consultar_rateio(id_solicitacao)
-            num_parcelas = database.numero_parcelas(id_solicitacao, numerodocto)
-            numeroos = row[11]
-            terceiro = row[12]
-            estado = row[13]
-            self.janela_cadastro_nf(cnpj, numerodocto, serie_value, data_emissao_value, tipo_docto_value, valor_value, contab_descricao_value, total_parcelas_value, tipo_pagamento_value, natureza_financeira_value, numeroos, terceiro, estado, usa_rateio_centro_custo, valor_sg, rateios, rateios_aut, inss, irff, piscofinscsl, iss, vencimento_value, obs, cod_contab_value, boletos, num_parcelas, id_solicitacao)
-            self.janela_imprimir_nota()
-            self.janela_secundario_imprimir_nota()
-            self.extract_pdf()
-            self.save_as(numerodocto, id_solicitacao)
-            self.close_extract_pdf_window()
-            time.sleep(2)
-            self.click_on_cancel()
-            self.janela_valores()
-            time.sleep(2)
-            num_controle = self.get_controle_value()
-            time.sleep(2)
-            print(num_controle)
-            time.sleep(5)
-            wise_instance.Anexar_AP(id_solicitacao, num_controle, numerodocto)
-            time.sleep(2)
-            wise_instance.get_pdf_file(numerodocto, id_solicitacao)
-            time.sleep(4)
-            wise_instance.confirm()
+            time.sleep(1)
+            success, message = self.check_conditions(tipo_docto_value, chave_de_acesso_value, serie_nota, natureza_value, vencimento_value, inss, irff, piscofinscsl, tipo_pagamento_value, icms, boletos)  
             time.sleep(3)
-            database.atualizar_anexosolicitacaogasto(numerodocto)
-            time.sleep(4)
             self.back_to_nbs()
             time.sleep(2)
-            self.close_aplications_half()
-            time.sleep(3)
-            #     except:
-            #         self.send_message_with_traceback(id_solicitacao, numerodocto)
-            # else:
-            #     self.send_message_pre_verification(message, id_solicitacao, numerodocto)
-            #     database.autoriza_rpa_para_n(id_solicitacao)
+            wise_instance.fechar_aba()
+            time.sleep(5)
+            time.sleep(1)
+            if success:
+                    # try:
+                wise_instance.get_xml(chave_de_acesso_value)
+                time.sleep(2)
+                self.back_to_nbs()
+                # wise_instance.fechar_aba()
+                # except: 
+                    # self.send_message_with_traceback(id_solicitacao, numerodocto)
+                # if success:
+                    # try:
+                empresa_atual = row[2]
+                if empresa_atual != empresa_anterior:
+                    self.close_aplications_end()
+                    time.sleep(3)
+                    self.open_application()
+                    self.login()
+                    self.janela_empresa_filial(row[2], row[3])
+                empresa_anterior = empresa_atual
+                print(empresa_anterior, empresa_atual)
+                self.access_contas_a_pagar()
+                self.janela_entrada()
+                self.importar_xml()
+                self.abrir_xml(chave_de_acesso_value)
+                cnpj = row[1]
+                contab_descricao_value = row[6]
+                cod_contab_value = row[7]
+                total_parcelas_value = row[9]
+                natureza_financeira_value = row[8]
+                usa_rateio_centro_custo = row[14] 
+                valor_sg = row[15] 
+                id_rateiocc = row[16]
+                obs = row[17]
+                rateios_aut = database.consultar_rateio_aut(id_rateiocc)
+                boletos = database.consultar_boleto(id_solicitacao)
+                rateios = database.consultar_rateio(id_solicitacao)
+                num_parcelas = database.numero_parcelas(id_solicitacao, numerodocto)
+                numeroos = row[11]
+                terceiro = row[12]
+                estado = row[13]
+                time.sleep(3)
+                self.janela_cadastro_nf(cnpj, numerodocto, serie_value, data_emissao_value, tipo_docto_value, valor_value, contab_descricao_value, total_parcelas_value, tipo_pagamento_value, natureza_financeira_value, numeroos, terceiro, estado, usa_rateio_centro_custo, valor_sg, rateios, rateios_aut, inss, irff, piscofinscsl, iss, vencimento_value, obs, cod_contab_value, boletos, num_parcelas, id_solicitacao, chave_de_acesso_value)
+                self.janela_imprimir_nota()
+                self.janela_secundario_imprimir_nota()
+                self.extract_pdf()
+                self.save_as(numerodocto, id_solicitacao)
+                self.close_extract_pdf_window()
+                time.sleep(2)
+                self.click_on_cancel()
+                self.janela_valores()
+                time.sleep(2)
+                num_controle = self.get_controle_value()
+                time.sleep(2)
+                print(num_controle)
+                time.sleep(5)
+                wise_instance.Anexar_AP(id_solicitacao, num_controle, numerodocto)
+                time.sleep(2)
+                wise_instance.get_pdf_file(numerodocto, id_solicitacao)
+                time.sleep(4)
+                wise_instance.confirm()
+                time.sleep(3)
+                database.atualizar_anexosolicitacaogasto(numerodocto)
+                time.sleep(4)
+                self.back_to_nbs()
+                time.sleep(2)
+                self.close_aplications_half()
+                time.sleep(3)
+                #     except:
+                #         self.send_message_with_traceback(id_solicitacao, numerodocto)
+            else:
+                self.send_message_pre_verification(message, id_solicitacao, numerodocto)
+                database.autoriza_rpa_para_n(id_solicitacao)
             
 rpa = NbsRpa()
 rpa.funcao_main()
