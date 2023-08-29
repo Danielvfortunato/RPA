@@ -11,6 +11,8 @@ from selenium.webdriver.support.select import Select
 import pygetwindow as gw
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.common.action_chains import ActionChains
 
 class Wise():
     def __init__(self):
@@ -219,104 +221,37 @@ class Wise():
     def fechar_aba(self):
         pyautogui.hotkey('ctrl','w')
 
-    def get_xml_fazenda(self, chave_acesso, id_empresa):
-        pyautogui.hotkey('ctrl', 't')
-        time.sleep(3)
-        pyautogui.typewrite("fazenda")
-        time.sleep(1)
-        pyautogui.press('enter')
-        time.sleep(2)
-        consultar_nfe = r"C:\Users\user\Documents\RPA_Project\imagens\consultar_nfe.PNG"
-        self.click_specific_button_wise(consultar_nfe)
-        time.sleep(1)
-        pyautogui.press('tab')
-        pyautogui.typewrite(chave_acesso)
-        captcha = r"C:\Users\user\Documents\RPA_Project\imagens\captcha.PNG"
-        time.sleep(2)
-        self.click_specific_button_wise(captcha)
-        time.sleep(2)
-        for _ in range(4):
-            pyautogui.press('tab')
-        pyautogui.press('enter')
-        time.sleep(3)
-        self.click_specific_button_wise(consultar_nfe)
-        for _ in range(3):
-            pyautogui.press('tab')
-        pyautogui.press('enter')
-        time.sleep(3)
-        pyautogui.press('enter')
-        time.sleep(3)
-        if id_empresa == 6:
-            pyautogui.press('enter')
-        elif id_empresa == 29:
-            pyautogui.press('down')
-            time.sleep(1)
-            pyautogui.press('enter')
-        elif id_empresa == 14:
-            for _ in range(2):
-                pyautogui.press('down')
-            time.sleep(1)
-            pyautogui.press('enter')
-        elif id_empresa == 2:
-            for _ in range(3):
-                pyautogui.press('down')
-            time.sleep(1)
-            pyautogui.press('enter')
-        elif id_empresa == 11:
-            for _ in range(4):
-                pyautogui.press('down')
-            time.sleep(1)
-            pyautogui.press('enter')
-        elif id_empresa == 9:
-            for _ in range(5):
-                pyautogui.press('down')
-            time.sleep(1)
-            pyautogui.press('enter')
-        elif id_empresa == 22:
-            for _ in range(6):
-                pyautogui.press('down')
-            time.sleep(1)
-            pyautogui.press('enter')
-        elif id_empresa == 4:
-            for _ in range(7):
-                pyautogui.press('down')
-            time.sleep(1)
-            pyautogui.press('enter')
-        elif id_empresa == 24:
-            for _ in range(8):
-                pyautogui.press('down')
-            time.sleep(1)
-            pyautogui.press('enter')
-        elif id_empresa == 25:
-            for _ in range(9):
-                pyautogui.press('down')
-            time.sleep(1)
-            pyautogui.press('enter')
-        elif id_empresa == 26:
-            for _ in range(10):
-                pyautogui.press('down')
-            time.sleep(1)
-            pyautogui.press('enter')
-        elif id_empresa == 39:
-            for _ in range(11):
-                pyautogui.press('down')
-            time.sleep(1)
-            pyautogui.press('enter')
-        elif id_empresa == 36:
-            for _ in range(12):
-                pyautogui.press('down')
-            time.sleep(1)
-            pyautogui.press('enter')
-        elif id_empresa == 40:
-            for _ in range(13):
-                pyautogui.press('down')
-            time.sleep(1)
-            pyautogui.press('enter')
-
-        
+    def get_xml(self, chave_acesso):
+        if self.driver:
+            self.driver.get("https://hub.sieg.com/")
+            if self.driver.find_elements(By.NAME, "txtEmail") and self.driver.find_elements(By.NAME, "txtPassword"):
+                campo_email = self.driver.find_element(By.NAME, "txtEmail")
+                campo_email.send_keys("filipe@wisemanager.com.br")
+                time.sleep(1)
+                campo_senha = self.driver.find_element(By.NAME, "txtPassword")
+                campo_senha.send_keys("Filipe@2023")
+                time.sleep(1)
+                botao_entrar = self.driver.find_element(By.NAME, "btnSubmit")
+                botao_entrar.click()          
+            time.sleep(5)
+            botao_xml = self.driver.find_element(By.XPATH, "//span[text()=\"Xml's Baixados\"]")
+            botao_xml.click()
+            time.sleep(2)
+            botao_opcoes = self.driver.find_element(By.ID, "btnOptions")
+            botao_opcoes.click()
+            time.sleep(2)
+            campo_texto = self.driver.find_element(By.ID, "xmlKeyDownload")
+            campo_texto.send_keys(chave_acesso)
+            time.sleep(2)
+            botao_pesquisar = self.driver.find_element(By.XPATH, "//a[contains(@onclick, 'SearchXmlDownload')]")
+            botao_pesquisar.click()
+            time.sleep(3)
+            botao_detalhes = self.driver.find_element(By.CLASS_NAME, "btnDetailsXml")
+            botao_detalhes.click()
+            time.sleep(2)
+            botao_download = self.driver.find_element(By.ID, "btnDownloadXmlHub")
+            botao_download.click()
 
 
 
-
-# wise = Wise()
 # wise.get_xml_fazenda('42230782956160001730550010000537261357285530')
