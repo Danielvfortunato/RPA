@@ -66,7 +66,7 @@ class Wise():
 
     def init_instance_chrome(self):
         chrome_options = Options()
-        chrome_options.add_argument("--start-maximized")
+        # chrome_options.add_argument("--start-maximized")
         chrome_options.add_experimental_option("debuggerAddress", "127.0.0.1:9222")
         if not self.driver:
             # service = Service(executable_path='./chromedriver.exe')
@@ -170,6 +170,11 @@ class Wise():
         self.start_chrome_debugger()
         self.init_instance_chrome()
         time.sleep(2)
+        # restaurar = r"C:\Users\user\Documents\RPA_Project\imagens\restaurar.PNG"
+        # time.sleep(2)
+        # pyautogui.press('tab')
+        # time.sleep(1)
+        # self.click_specific_button_wise(restaurar)
         self.driver.get("https://gera.wisemanager.com.br/WiseManagerBI/#/financeiro/efetivacaoSolicitacaoGastoNew")
         if self.driver.find_elements(By.NAME, "j_username") and self.driver.find_elements(By.NAME, "j_password"):
             self.login()
