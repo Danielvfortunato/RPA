@@ -353,10 +353,11 @@ class NbsRpa():
             '5405': '1407'
         }
         #
+        default_value = '2556' if estado != 'SC' else '1556'
         cfop_results = self.get_data_from_xml(chave_acesso)
         for item in cfop_results:
             cfop = item['CFOP']
-            mapped_value = CFOP_MAPPING.get(cfop, None)
+            mapped_value = CFOP_MAPPING.get(cfop, default_value)
             if mapped_value:
                 inserir_natureza = r"C:\Users\user\Documents\RPA_Project\imagens\inserir_natureza.PNG"
                 self.click_specific_button(inserir_natureza)
@@ -871,10 +872,10 @@ class NbsRpa():
                 texto_total += texto + '\n'
         return texto_total
 
-    # def find_isolated_5102(self, text):
-    #     pattern = r'(?<!\d)5102(?!\d)'
-    #     result = re.search(pattern, text)
-    #     return True if result else False
+    def find_isolated_5102(self, text):
+        pattern = r'(?<!\d)5102(?!\d)'
+        result = re.search(pattern, text)
+        return True if result else False
     
     def get_chave_acesso(self, num_docto, id_solicitacao):
         pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
@@ -1070,74 +1071,74 @@ class NbsRpa():
             wise_instance.fechar_aba()
             time.sleep(5)
             time.sleep(1)
+            # except: 
+            #     self.send_message_with_traceback(id_solicitacao, numerodocto)
             if success:
-                    # try:
-                wise_instance.get_xml(chave_de_acesso_value)
-                time.sleep(2)
-                self.back_to_nbs()
-                # wise_instance.fechar_aba()
-                # except: 
-                    # self.send_message_with_traceback(id_solicitacao, numerodocto)
-                # if success:
-                    # try:
-                empresa_atual = row[2]
-                if empresa_atual != empresa_anterior:
-                    self.close_aplications_end()
+                try:
+                    wise_instance.get_xml(chave_de_acesso_value)
+                    time.sleep(2)
+                    self.back_to_nbs()
+                    # wise_instance.fechar_aba()
+                    # if success:
+                        # try:
+                    empresa_atual = row[2]
+                    if empresa_atual != empresa_anterior:
+                        self.close_aplications_end()
+                        time.sleep(3)
+                        self.open_application()
+                        self.login()
+                        self.janela_empresa_filial(row[2], row[3])
+                    empresa_anterior = empresa_atual
+                    print(empresa_anterior, empresa_atual)
+                    self.access_contas_a_pagar()
+                    self.janela_entrada()
+                    self.importar_xml()
+                    self.abrir_xml(chave_de_acesso_value)
+                    cnpj = row[1]
+                    contab_descricao_value = row[6]
+                    cod_contab_value = row[7]
+                    total_parcelas_value = row[9]
+                    natureza_financeira_value = row[8]
+                    usa_rateio_centro_custo = row[14] 
+                    valor_sg = row[15] 
+                    id_rateiocc = row[16]
+                    obs = row[17]
+                    rateios_aut = database.consultar_rateio_aut(id_rateiocc)
+                    boletos = database.consultar_boleto(id_solicitacao)
+                    rateios = database.consultar_rateio(id_solicitacao)
+                    num_parcelas = database.numero_parcelas(id_solicitacao, numerodocto)
+                    numeroos = row[11]
+                    terceiro = row[12]
+                    estado = row[13]
                     time.sleep(3)
-                    self.open_application()
-                    self.login()
-                    self.janela_empresa_filial(row[2], row[3])
-                empresa_anterior = empresa_atual
-                print(empresa_anterior, empresa_atual)
-                self.access_contas_a_pagar()
-                self.janela_entrada()
-                self.importar_xml()
-                self.abrir_xml(chave_de_acesso_value)
-                cnpj = row[1]
-                contab_descricao_value = row[6]
-                cod_contab_value = row[7]
-                total_parcelas_value = row[9]
-                natureza_financeira_value = row[8]
-                usa_rateio_centro_custo = row[14] 
-                valor_sg = row[15] 
-                id_rateiocc = row[16]
-                obs = row[17]
-                rateios_aut = database.consultar_rateio_aut(id_rateiocc)
-                boletos = database.consultar_boleto(id_solicitacao)
-                rateios = database.consultar_rateio(id_solicitacao)
-                num_parcelas = database.numero_parcelas(id_solicitacao, numerodocto)
-                numeroos = row[11]
-                terceiro = row[12]
-                estado = row[13]
-                time.sleep(3)
-                self.janela_cadastro_nf(cnpj, numerodocto, serie_value, data_emissao_value, tipo_docto_value, valor_value, contab_descricao_value, total_parcelas_value, tipo_pagamento_value, natureza_financeira_value, numeroos, terceiro, estado, usa_rateio_centro_custo, valor_sg, rateios, rateios_aut, inss, irff, piscofinscsl, iss, vencimento_value, obs, cod_contab_value, boletos, num_parcelas, id_solicitacao, chave_de_acesso_value)
-                self.janela_imprimir_nota()
-                self.janela_secundario_imprimir_nota()
-                self.extract_pdf()
-                self.save_as(numerodocto, id_solicitacao)
-                self.close_extract_pdf_window()
-                time.sleep(2)
-                self.click_on_cancel()
-                self.janela_valores()
-                time.sleep(2)
-                num_controle = self.get_controle_value()
-                time.sleep(2)
-                print(num_controle)
-                time.sleep(5)
-                wise_instance.Anexar_AP(id_solicitacao, num_controle, numerodocto)
-                time.sleep(2)
-                wise_instance.get_pdf_file(numerodocto, id_solicitacao)
-                time.sleep(4)
-                wise_instance.confirm()
-                time.sleep(3)
-                database.atualizar_anexosolicitacaogasto(numerodocto)
-                time.sleep(4)
-                self.back_to_nbs()
-                time.sleep(2)
-                self.close_aplications_half()
-                time.sleep(3)
-                #     except:
-                #         self.send_message_with_traceback(id_solicitacao, numerodocto)
+                    self.janela_cadastro_nf(cnpj, numerodocto, serie_value, data_emissao_value, tipo_docto_value, valor_value, contab_descricao_value, total_parcelas_value, tipo_pagamento_value, natureza_financeira_value, numeroos, terceiro, estado, usa_rateio_centro_custo, valor_sg, rateios, rateios_aut, inss, irff, piscofinscsl, iss, vencimento_value, obs, cod_contab_value, boletos, num_parcelas, id_solicitacao, chave_de_acesso_value)
+                    self.janela_imprimir_nota()
+                    self.janela_secundario_imprimir_nota()
+                    self.extract_pdf()
+                    self.save_as(numerodocto, id_solicitacao)
+                    self.close_extract_pdf_window()
+                    time.sleep(2)
+                    self.click_on_cancel()
+                    self.janela_valores()
+                    time.sleep(2)
+                    num_controle = self.get_controle_value()
+                    time.sleep(2)
+                    print(num_controle)
+                    time.sleep(5)
+                    wise_instance.Anexar_AP(id_solicitacao, num_controle, numerodocto)
+                    time.sleep(2)
+                    wise_instance.get_pdf_file(numerodocto, id_solicitacao)
+                    time.sleep(4)
+                    wise_instance.confirm()
+                    time.sleep(3)
+                    database.atualizar_anexosolicitacaogasto(numerodocto)
+                    time.sleep(4)
+                    self.back_to_nbs()
+                    time.sleep(2)
+                    self.close_aplications_half()
+                    time.sleep(3)
+                except:
+                    self.send_message_with_traceback(id_solicitacao, numerodocto)
             else:
                 self.send_message_pre_verification(message, id_solicitacao, numerodocto)
                 database.autoriza_rpa_para_n(id_solicitacao)
