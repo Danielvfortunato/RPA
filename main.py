@@ -41,6 +41,14 @@ class NbsRpa():
                 return False
             time.sleep(1)
         return True
+    
+    def wait_until_interactive(self, ctrl, timeout=60):
+        end_time = time.time() + timeout
+        while time.time() < end_time:
+            if ctrl.is_visible() and ctrl.is_enabled():
+                return True
+            time.sleep(0.5)
+        raise TimeoutError(f"Elemento não ficou interativo após {timeout} segundos")
 
     def login(self):
         title = "NBS - Login"
