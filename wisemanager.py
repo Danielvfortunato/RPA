@@ -9,10 +9,6 @@ from pywinauto.findwindows import ElementNotFoundError
 import pyautogui
 from selenium.webdriver.support.select import Select
 import pygetwindow as gw
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.common.action_chains import ActionChains
 
 class Wise():
     def __init__(self):
@@ -33,6 +29,14 @@ class Wise():
                 return False
             time.sleep(1)
         return True
+    
+    def wait_until_interactive(self, ctrl, timeout=60):
+        end_time = time.time() + timeout
+        while time.time() < end_time:
+            if ctrl.is_visible() and ctrl.is_enabled():
+                return True
+            time.sleep(0.5)
+        raise TimeoutError(f"Elemento não ficou interativo após {timeout} segundos")
 
     def start_chrome_debugger(self):
         for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
@@ -62,6 +66,11 @@ class Wise():
             return 
         janela = app['Barra de Tarefas']
         abrir_google = janela.child_window(title="Google Chrome - 1 executando o windows")
+        try:
+            self.wait_until_interactive(abrir_google)
+        except TimeoutError as e:
+            print(str(e))
+            return
         abrir_google.click_input()
 
     def init_instance_chrome(self):
@@ -170,11 +179,6 @@ class Wise():
         self.start_chrome_debugger()
         self.init_instance_chrome()
         time.sleep(2)
-        # restaurar = r"C:\Users\user\Documents\RPA_Project\imagens\restaurar.PNG"
-        # time.sleep(2)
-        # pyautogui.press('tab')
-        # time.sleep(1)
-        # self.click_specific_button_wise(restaurar)
         self.driver.get("https://gera.wisemanager.com.br/WiseManagerBI/#/financeiro/efetivacaoSolicitacaoGastoNew")
         if self.driver.find_elements(By.NAME, "j_username") and self.driver.find_elements(By.NAME, "j_password"):
             self.login()
