@@ -13,6 +13,8 @@ import requests
 import pdfplumber
 import traceback
 import xml.etree.ElementTree as ET
+import math
+import send_mail
 
 class NbsRpa():
     
@@ -52,7 +54,7 @@ class NbsRpa():
 
     def login(self):
         title = "NBS - Login"
-        if not self.esperar_janela_visivel(title, timeout=60):
+        if not self.esperar_janela_visivel(title, timeout=120):
             print("Falha: Janela de login não está visível.")
             return
         time.sleep(2)
@@ -68,12 +70,32 @@ class NbsRpa():
         server = janela.child_window(class_name="TButtonedEdit")
         submit = janela.child_window(class_name="TfcImageBtn", found_index=0)
         # Set Comands
+        try:
+            self.wait_until_interactive(user)
+        except TimeoutError as e:
+            print(str(e))
+            return
         user.type_keys("NBS")
-        time.sleep(2)
+        # time.sleep(2)
+        try:
+            self.wait_until_interactive(password)
+        except TimeoutError as e:
+            print(str(e))
+            return
         password.type_keys("gerati2023")
-        time.sleep(2)
+        # time.sleep(2)
+        try:
+            self.wait_until_interactive(server)
+        except TimeoutError as e:
+            print(str(e))
+            return
         server.type_keys("nbs")
-        time.sleep(2)
+        # time.sleep(2)
+        try:
+            self.wait_until_interactive(submit)
+        except TimeoutError as e:
+            print(str(e))
+            return
         submit.click_input()
         
     # def initial_page(self):
@@ -92,7 +114,7 @@ class NbsRpa():
 
     def janela_empresa_filial(self, empresa_name_value, cod_matriz_value):
         title = "Empresa/Filial"
-        if not self.esperar_janela_visivel(title, timeout=60):
+        if not self.esperar_janela_visivel(title, timeout=120):
             print("Falha: Janela de empresa/filial não está visível.")
             return
         time.sleep(2)
@@ -107,12 +129,27 @@ class NbsRpa():
         filial = janela.child_window(class_name="TDBLookupComboBox", found_index=0)
         confirma = janela.child_window(class_name="TBitBtn", found_index=1)
         # Set Comands
+        try:
+            self.wait_until_interactive(empresa)
+        except TimeoutError as e:
+            print(str(e))
+            return
         empresa.type_keys(cod_matriz_value)
-        time.sleep(1)
+        try:
+            self.wait_until_interactive(filial)
+        except TimeoutError as e:
+            print(str(e))
+            return
         filial.click_input()
         time.sleep(1)
         pyautogui.typewrite(empresa_name_value)
+        time.sleep(1)
         filial.type_keys('{ENTER}')
+        try:
+            self.wait_until_interactive(confirma)
+        except TimeoutError as e:
+            print(str(e))
+            return
         confirma.click_input()
         
     def access_contas_a_pagar(self):
@@ -251,25 +288,50 @@ class NbsRpa():
             if inss > 0 or irff > 0 or piscofinscsl > 0 or iss > 0:
                 detalhe_nota = janela.child_window(title="Valores da Nota", class_name="TTabSheet")
                 irff_detail = detalhe_nota.child_window(class_name="TOvcDbPictureField", found_index=11)
+                try:
+                    self.wait_until_interactive(irff_detail)
+                except TimeoutError as e:
+                    print(str(e))
+                    return
                 irff_detail.click_input()
                 time.sleep(1)
                 pyautogui.press("tab")
                 time.sleep(3)
                 self.calculo_tributos(inss, irff, piscofinscsl, iss, valor_value)
         time.sleep(1)
+        try:
+            self.wait_until_interactive(observacao)
+        except TimeoutError as e:
+            print(str(e))
+            return
         observacao.click_input()
         time.sleep(1)
         pyautogui.typewrite(obs)
         natureza_financeira_list = ['ALUGUEIS A PAGAR', 'COMBUSTÍVEIS/ LUBRIFICANTES', 'CUSTO COMBUSTIVEL NOVOS', 'CUSTO DESPACHANTE NOVOS', 'CUSTO FRETE NOVOS', 'CUSTO NOVOS', 'CUSTO OFICINA', 'DESP DESPACHANTE NOVOS', 'DESP FRETE VEIC NOVOS', 'DESP. COM SERVICOS DE OFICINA', 'DESPESA COM LAVACAO', 'DESPESA OFICINA', 'ENERGIA ELETRICA', 'FRETE', 'HONORARIO PESSOA JURIDICA', 'INFORMATICA HARDWARE', 'INFORMATICA SOFTWARE', 'INTERNET', 'MANUT. E CONSERV. DE', 'MATERIAL DE OFICINA DESPESA', 'PONTO ELETRONICO RA', 'SALARIO ERIBERTO', 'SALARIO MAGU', 'SALARIO VIVIANE', 'SALARIOS RA', 'SERVICO DE TERCEIROS FUNILARIA', 'SERVICOS DE TERCEIRO OFICINA', 'SOFTWARE', 'VALE TRANSPORTE RA', 'VD SALARIO', 'VD VEICULOS NOVOS', 'VIAGENS E ESTADIAS', 'AÇÕES EXTERNAS', 'AÇÕES LOJA', 'ADESIVOS', 'AGENCIA', 'BRINDES E CORTESIAS', 'DECORAÇÃO', 'DESENSOLVIMENTO SITE', 'DESP MKT CHERY FLORIPA', 'DISPARO SMS/WHATS', 'EVENTOS', 'EXPOSITORES', 'FACEBOOK', 'FACEBOOK/INSTAGRAM', 'FEE MENSAL', 'FEIRA/EVENTOS', 'FEIRAO', 'FOLLOWISE (MKT)', 'GOOGLE', 'INFLUENCIADORES', 'INSTITUCIONAL', 'INTEGRADOR (MKT)', 'JORNAL', 'LANCAMENTOS', 'LED', 'MARKETING', 'MERCADO LIVRE', 'MIDIA ON OUTROS', 'MIDIA/ONLINE', 'MKT', 'OUTDOOR', 'PANFLETOS', 'PATROCINIO', 'PORTAL GERACAO', 'PROSPECÇÃO', 'PUBLICIDADE E PROPAGANDA', 'RADIO', 'RD (MKT)', 'REGISTRO SITE', 'SISTEMAS (MKT)', 'SYONET AUTOMOVEIS', 'TELEVISAO', 'VENDAS EXTERNAS', 'VIDEOS', 'VITRINE', 'WISE (MKT)']
         if natureza_financeira_value in natureza_financeira_list:
-            time.sleep(2)
+            time.sleep(1)
             check_pis_cofins = janela.child_window(class_name="TCheckBox", found_index=0)
+            try:
+                self.wait_until_interactive(check_pis_cofins)
+            except TimeoutError as e:
+                print(str(e))
+                return
             check_pis_cofins.click_input()
-            time.sleep(2)
+            # time.sleep(2)
             tab_natureza_credito = janela.child_window(title='Natureza Créditos Pis/Cofins', control_type='TabItem')
+            try:
+                self.wait_until_interactive(tab_natureza_credito)
+            except TimeoutError as e:
+                print(str(e))
+                return
             tab_natureza_credito.click_input()
             time.sleep(1)
             nat_text = janela.child_window(class_name='TwwDBLookupCombo', found_index=1)
+            try:
+                self.wait_until_interactive(nat_text)
+            except TimeoutError as e:
+                print(str(e))
+                return
             nat_text.click_input()
             time.sleep(1)
             pyautogui.typewrite('Aquisicao de bens utilizados como insumo')
@@ -350,7 +412,12 @@ class NbsRpa():
         # time.sleep(1)
         # chave_nfe = janela.child_window(class_name='TDBEdit', found_index=6)
         # chave_nfe.type_keys(chave_acesso)
-        time.sleep(2)
+        time.sleep(1)
+        try:
+            self.wait_until_interactive(aba_cfop)
+        except TimeoutError as e:
+            print(str(e))
+            return
         aba_cfop.click_input()
         time.sleep(2)
         CFOP_MAPPING = {
@@ -360,40 +427,50 @@ class NbsRpa():
             '5656': '1407',
             '5405': '1407'
         }
-        #
         default_value = '2556' if estado != 'SC' else '1556'
         cfop_results = self.get_data_from_xml(chave_acesso)
+
+        # Agrupar CFOPs pelo código de natureza
+        grouped_by_nature = {}
         for item in cfop_results:
             cfop = item['CFOP']
+            valor_float = float(item['vProd'].replace(',', '.'))
             mapped_value = CFOP_MAPPING.get(cfop, default_value)
-            if mapped_value:
-                inserir_natureza = r"C:\Users\user\Documents\RPA_Project\imagens\inserir_natureza.PNG"
-                self.click_specific_button(inserir_natureza)
-                time.sleep(2)
-                pyautogui.typewrite(mapped_value)
-                time.sleep(2)
-                pesquisa_natureza = r"C:\Users\user\Documents\RPA_Project\imagens\pesquisa_natureza.PNG" 
-                self.click_specific_button(pesquisa_natureza)
-                time.sleep(1)
-                for _ in range(2):
-                    pyautogui.press('tab')
-                pyautogui.press('enter')
-                time.sleep(2)
-                outros = janela.child_window(class_name='TOvcDbPictureField', found_index=15)
-                outros.click_input()
-                for _ in range(2):
-                    pyautogui.press('tab')
-                    time.sleep(0.5)
-                time.sleep(2)
-                pyautogui.typewrite(valor_value)
-                time.sleep(1)
-                adicionar_cfop = r"C:\Users\user\Documents\RPA_Project\imagens\adicionar_cfop.PNG"
-                self.click_specific_button(adicionar_cfop)
+
+            if mapped_value in grouped_by_nature:
+                grouped_by_nature[mapped_value] += valor_float
+            else:
+                grouped_by_nature[mapped_value] = valor_float
+
+        valor_total_float = float(valor_value.replace(',', '.'))
+        valor_already_added = 0
+
+        for idx, (mapped_value, total) in enumerate(grouped_by_nature.items()):
+            # Se não for o último item, use o valor total desse código de natureza
+            if idx != len(grouped_by_nature) - 1:
+                valor = round(total, 2)
+                valor_already_added += valor
+            else: # Se for o último item, ajuste para o total da nota
+                valor = valor_total_float - valor_already_added
+                
+            valor_str = str(valor).replace('.', ',')
+            self.execute_rpa_actions(mapped_value, valor_str)
+
         ##### se for nota fiscal de produto
+        try:
+            self.wait_until_interactive(tab_contab)
+        except TimeoutError as e:
+            print(str(e))
+            return
         tab_contab.click_input()
         excluir = r"C:\Users\user\Documents\RPA_Project\imagens\Excluir.PNG"
         time.sleep(1)
         cod_contab = janela.child_window(class_name="TOvcNumericField", found_index=0)
+        try:
+            self.wait_until_interactive(cod_contab)
+        except TimeoutError as e:
+            print(str(e))
+            return
         cod_contab.click_input()
         time.sleep(1)
         pyautogui.doubleClick()
@@ -418,6 +495,11 @@ class NbsRpa():
         while loop_continue:
             self.click_specific_button(excluir)
             time.sleep(1)
+            try:
+                self.wait_until_interactive(descricao)
+            except TimeoutError as e:
+                print(str(e))
+                return
             descricao.click_input()
             for elem in janela.children():
                 if "Informação" in elem.window_text():
@@ -427,6 +509,11 @@ class NbsRpa():
         time.sleep(2)
         self.inserir_rateio(rateios, conta_contabil, valor_sg, valor_value, usa_rateio_centro_custo, rateios_aut)
         time.sleep(2)
+        try:
+            self.wait_until_interactive(tab_faturamento)
+        except TimeoutError as e:
+            print(str(e))
+            return
         tab_faturamento.click_input()
         time.sleep(1)
         if tipo_pagamento_value == 'B':
@@ -441,6 +528,11 @@ class NbsRpa():
         time.sleep(1)
         self.click_specific_button(gerar)
         time.sleep(1)
+        try:
+            self.wait_until_interactive(tipo_pagamento)
+        except TimeoutError as e:
+            print(str(e))
+            return
         tipo_pagamento.click_input()
         if tipo_pagamento_value in ('B','A'):
             pyautogui.typewrite('Boleto Bancario')
@@ -451,6 +543,11 @@ class NbsRpa():
         elif tipo_pagamento_value in ('E', 'C'):
             pyautogui.typewrite('Especie')
             pyautogui.press('tab')
+        try:
+            self.wait_until_interactive(natureza_despesa)
+        except TimeoutError as e:
+            print(str(e))
+            return
         natureza_despesa.click_input()
         time.sleep(1)
         pyautogui.typewrite(natureza_financeira_value)
@@ -469,15 +566,6 @@ class NbsRpa():
                 self.click_specific_button(barra_boleto)
                 pyautogui.press("down")
         else:
-            # vencimento.double_click_input()
-            # time.sleep(1)
-            # pyautogui.doubleClick()
-            # time.sleep(2)
-            # pyautogui.press("backspace")
-            # time.sleep(2)
-            # print(vencimento_value)
-            # str_vencimento = str(vencimento_value)
-            # vencimento.type_keys(str_vencimento)
             for n in num_parcelas:
                 vencimento.click_input()
                 time.sleep(1)
@@ -500,6 +588,38 @@ class NbsRpa():
         time.sleep(1)
         pyautogui.press('enter')
 
+    def execute_rpa_actions(self, mapped_value, valor):
+        title = "Entrada Diversas / Operação: 52-Entrada Diversas"
+        try:
+            app = Application(backend='uia').connect(title=title)
+        except ElementNotFoundError:
+            print("Não foi possível se conectar com a janela de cadastro de nf")
+            return 
+        janela = app[title]
+        inserir_natureza = r"C:\Users\user\Documents\RPA_Project\imagens\inserir_natureza.PNG"
+        self.click_specific_button(inserir_natureza)
+        time.sleep(2)
+        pyautogui.typewrite(mapped_value)
+        time.sleep(2)
+        pesquisa_natureza = r"C:\Users\user\Documents\RPA_Project\imagens\pesquisa_natureza.PNG" 
+        self.click_specific_button(pesquisa_natureza)
+        time.sleep(1)
+        for _ in range(2):
+            pyautogui.press('tab')
+        pyautogui.press('enter')
+        time.sleep(2)
+        outros = janela.child_window(class_name='TOvcDbPictureField', found_index=15)
+        time.sleep(2)
+        outros.click_input()
+        for _ in range(2):
+            pyautogui.press('tab')
+            time.sleep(0.5)
+        time.sleep(2)
+        pyautogui.typewrite(valor)
+        time.sleep(2)
+        adicionar_cfop = r"C:\Users\user\Documents\RPA_Project\imagens\adicionar_cfop.PNG"
+        self.click_specific_button(adicionar_cfop)
+
     def janela_se_terceiro(self, numeroos):
         title = "Entrada Diversas / Operação: 52-Entrada Diversas"
         if not self.esperar_janela_visivel(title, timeout=60):
@@ -516,6 +636,11 @@ class NbsRpa():
         cadeado = r"C:\Users\user\Documents\RPA_Project\imagens\Cadeado.PNG"
         pesquisa_os = r"C:\Users\user\Documents\RPA_Project\imagens\Procura_Os.PNG"
         numero_os = janela.child_window(class_name="TOvcNumericField", found_index=0)
+        try:
+            self.wait_until_interactive(numero_os)
+        except TimeoutError as e:
+            print(str(e))
+            return
         if numeroos != '':
             relacao_os.click_input()
             time.sleep(1)
@@ -546,6 +671,11 @@ class NbsRpa():
             return 
         janela = app[title]
         tab_dados = janela.child_window(control_type="TabItem", found_index=1)
+        try:
+            self.wait_until_interactive(tab_dados)
+        except TimeoutError as e:
+            print(str(e))
+            return
         tab_dados.click_input()
         pyautogui.press("enter")
     
@@ -596,6 +726,11 @@ class NbsRpa():
         # janela.wait('visible', timeout=120)
         # Declare Variables
         v_print = janela.child_window(found_index=12)
+        try:
+            self.wait_until_interactive(v_print)
+        except TimeoutError as e:
+            print(str(e))
+            return
         # Set Comands
         v_print.click_input()
 
@@ -636,8 +771,18 @@ class NbsRpa():
         file_name = janela.child_window(class_name="Edit")
         file_type = janela.child_window(class_name="AppControlHost", found_index=1)
         # Set Comands
+        try:
+            self.wait_until_interactive(file_name)
+        except TimeoutError as e:
+            print(str(e))
+            return
         file_name.type_keys(f"AP_{num_docto}{id_solicitacao}")
         pyautogui.press('tab')
+        try:
+            self.wait_until_interactive(file_type)
+        except TimeoutError as e:
+            print(str(e))
+            return
         file_type.click_input()
         for _ in range(2):
             pyautogui.press('down')
@@ -675,6 +820,11 @@ class NbsRpa():
         # janela.wait('visible', timeout=120)
         janela.set_focus()
         fechar = janela.child_window(title="Fechar")
+        try:
+            self.wait_until_interactive(fechar)
+        except TimeoutError as e:
+            print(str(e))
+            return
         fechar.click_input()
 
     def close_aplications_half(self):
@@ -712,6 +862,11 @@ class NbsRpa():
             return 
         janela = app[title]
         minimizar_google = janela.child_window(title="Google Chrome - 1 executando o windows")
+        try:
+            self.wait_until_interactive(minimizar_google)
+        except TimeoutError as e:
+            print(str(e))
+            return
         minimizar_google.click_input()
         
     def fechar_conta_contabilizacao(self):
@@ -727,6 +882,11 @@ class NbsRpa():
             return 
         janela = app[title]
         fechar = janela.child_window(class_name='TBitBtn', found_index=0)
+        try:
+            self.wait_until_interactive(fechar)
+        except TimeoutError as e:
+            print(str(e))
+            return
         fechar.click_input()
    
     def inserir_rateio(self, rateios, conta_contabil, valor_sg, vlr_nf, usa_rateio_centro_custo, rateios_aut):
@@ -1021,6 +1181,7 @@ class NbsRpa():
         path = rf'C:\Users\user\Downloads\{chave_acesso}.xml'
         tree = ET.parse(path)
         root = tree.getroot()
+        # Identifica o namespace
         ns = None
         for elem in root.iter():
             if '}' in elem.tag:
@@ -1028,17 +1189,28 @@ class NbsRpa():
                 break
         if ns is None:
             raise ValueError("Namespace não encontrado no XML.")
-        
-        unique_cfops = set()
+        # Processa os elementos <det> para obter CFOP, vProd e vDesc
+        cfop_values = {}
         det_elements = root.findall('.//ns:det', namespaces=ns)
         for det in det_elements:
-            cfop = det.find('.//ns:CFOP', namespaces=ns)
-            if cfop is not None:
-                unique_cfops.add(cfop.text)
-
-        results = [{'CFOP': cfop} for cfop in unique_cfops]
+            cfop_elem = det.find('.//ns:CFOP', namespaces=ns)
+            vprod_elem = det.find('.//ns:vProd', namespaces=ns)
+            vdesc_elem = det.find('.//ns:vDesc', namespaces=ns)
+            if cfop_elem is not None and vprod_elem is not None:
+                cfop = cfop_elem.text
+                vprod = float(vprod_elem.text.replace(',', '.')) # Converte para float considerando a vírgula
+                if vdesc_elem is not None:
+                    vprod -= float(vdesc_elem.text.replace(',', '.')) # Desconta o valor vDesc se ele existir
+                # Arredonda o valor para 2 casas decimais
+                vprod = math.ceil(vprod * 100) / 100
+                if cfop in cfop_values:
+                    cfop_values[cfop] += vprod  # Soma o valor vProd ao CFOP existente
+                else:
+                    cfop_values[cfop] = vprod  # Cria uma nova entrada para o CFOP com o valor vProd
+        # Converte o dicionário processado em uma lista de dicionários, formatando o valor para string
+        results = [{'CFOP': key, 'vProd': str(value).replace('.', ',')} for key, value in cfop_values.items()]
         return results
-   
+    
     def funcao_main(self):
         registros = database.consultar_dados_cadastro()
         empresa_anterior = None
@@ -1140,6 +1312,8 @@ class NbsRpa():
                     wise_instance.confirm()
                     time.sleep(3)
                     database.atualizar_anexosolicitacaogasto(numerodocto)
+                    time.sleep(2)
+                    send_mail.enviar_email(id_solicitacao, numerodocto)
                     time.sleep(4)
                     self.back_to_nbs()
                     time.sleep(2)
