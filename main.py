@@ -335,7 +335,8 @@ class NbsRpa():
             nat_text.click_input()
             time.sleep(1)
             pyautogui.typewrite('Aquisicao de bens utilizados como insumo')
-            pyautogui.press('enter')
+            time.sleep(2)
+            pyautogui.press('tab')
         # se for nota fiscal de produto 
         # habilitar_livro = janela.child_window(title='Quero esta nota no livro fiscal')
         # time.sleep(2)
