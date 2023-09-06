@@ -2,25 +2,27 @@ from email.message import EmailMessage
 import smtplib
 
 def enviar_email(id_solicitacao, numero_nota):
-    with open('senha_email.txt') as f:
-        senha_do_email = f.readline().strip()
-    
-    email = "filipeafort@gmail.com"
-    destinatario = "tiago@geracao.com.br"
-    assunto = "Lançamento bem sucedido!"
+    senha_do_email = "F39659122332645EAE5F781FFE818E74EE1D"
+
+    email = "alertawise@wisemanager.com.br"
+    destinatarios = ["thiago@geracao-motor.com.br", "daniel@geracao-motor.com.br"]
+    assunto = f"Lançamento da SG: {id_solicitacao} efetuado com sucesso pelo RPA"
     corpo_email = f"""
-    Lançamento bem sucedido!
     Número da solicitação: {id_solicitacao}
     Número da nota: {numero_nota}
     """
 
-    msg = EmailMessage()
-    msg['Subject'] = assunto
-    msg['From'] = email
-    msg['To'] = destinatario
-    msg.set_content(corpo_email)
-
-    with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
+    with smtplib.SMTP_SSL('smtp.elasticemail.com', 465) as smtp:
         smtp.login(email, senha_do_email)
-        smtp.send_message(msg)
+        
+        for destinatario in destinatarios:
+            msg = EmailMessage()
+            msg['Subject'] = assunto
+            msg['From'] = email
+            msg['To'] = destinatario
+            msg.set_content(corpo_email)
+            
+            smtp.send_message(msg)
 
+# Exemplo de uso
+# enviar_email("123123", "123123")
