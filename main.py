@@ -76,21 +76,21 @@ class NbsRpa():
             print(str(e))
             return
         user.type_keys("NBS")
-        # time.sleep(2)
+        time.sleep(2)
         try:
             self.wait_until_interactive(password)
         except TimeoutError as e:
             print(str(e))
             return
         password.type_keys("gerati2023")
-        # time.sleep(2)
+        time.sleep(2)
         try:
             self.wait_until_interactive(server)
         except TimeoutError as e:
             print(str(e))
             return
         server.type_keys("nbs")
-        # time.sleep(2)
+        time.sleep(2)
         try:
             self.wait_until_interactive(submit)
         except TimeoutError as e:
@@ -431,7 +431,6 @@ class NbsRpa():
         default_value = '2556' if estado != 'SC' else '1556'
         cfop_results = self.get_data_from_xml(chave_acesso)
 
-        # Agrupar CFOPs pelo código de natureza
         grouped_by_nature = {}
         for item in cfop_results:
             cfop = item['CFOP']
@@ -582,12 +581,19 @@ class NbsRpa():
             self.janela_se_terceiro(numeroos)
         time.sleep(2)
         submit_button.click_input()
-        time.sleep(1)
+        time.sleep(2)
         if estado != 'SC':
             pyautogui.press('tab')
             pyautogui.press('enter')
         time.sleep(1)
-        pyautogui.press('enter')
+        start_time = time.time()
+        while time.time() - start_time < 30:  
+            for elem in janela.children():
+                if "Aviso NF-e" in elem.window_text():
+                    pyautogui.press("enter")
+                    break
+            time.sleep(0.5)  
+
 
     def execute_rpa_actions(self, mapped_value, valor):
         title = "Entrada Diversas / Operação: 52-Entrada Diversas"
@@ -1047,6 +1053,21 @@ class NbsRpa():
         return True if result else False
     
     def get_chave_acesso(self, num_docto, id_solicitacao):
+        # pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+        # caminho_pdf = rf"C:\Users\user\Documents\APs\nota_{num_docto}{id_solicitacao}.pdf"
+        # imagens = convert_from_path(caminho_pdf)
+        # texto_total = ""
+        # for imagem in imagens:
+        #     texto = pytesseract.image_to_string(imagem)
+        #     if texto:
+        #         texto_total += texto + '\n'
+        # chave_acesso_match = re.search(r'((\d{4}[\W\s]){10}\d{4})', texto_total)
+        # chave_acesso = chave_acesso_match.group(0) if chave_acesso_match else None
+        # if chave_acesso:
+        #     nao_numericos = re.findall(r'[^\d]', chave_acesso)
+        #     if nao_numericos:
+        #         chave_acesso = re.sub(r'[^\d]', '', chave_acesso)
+        # return chave_acesso
         pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
         caminho_pdf = rf"C:\Users\user\Documents\APs\nota_{num_docto}{id_solicitacao}.pdf"
         imagens = convert_from_path(caminho_pdf)
@@ -1055,7 +1076,11 @@ class NbsRpa():
             texto = pytesseract.image_to_string(imagem)
             if texto:
                 texto_total += texto + '\n'
-        chave_acesso_match = re.search(r'((\d{4}[\W\s]){10}\d{4})', texto_total)
+        # Primeiro procuramos pelo novo padrão (44 dígitos consecutivos)
+        chave_acesso_match = re.search(r'(\d{44})', texto_total)
+        # Se não encontrarmos, procuramos pelo padrão anterior
+        if not chave_acesso_match:
+            chave_acesso_match = re.search(r'((\d{4}[\W\s]){10}\d{4})', texto_total)
         chave_acesso = chave_acesso_match.group(0) if chave_acesso_match else None
         if chave_acesso:
             nao_numericos = re.findall(r'[^\d]', chave_acesso)
