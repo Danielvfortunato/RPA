@@ -254,7 +254,7 @@ class Wise():
             time.sleep(2)
             botao_pesquisar = self.driver.find_element(By.XPATH, "//a[contains(@onclick, 'SearchXmlDownload')]")
             botao_pesquisar.click()
-            time.sleep(3)
+            time.sleep(5)
             botao_detalhes = self.driver.find_element(By.CLASS_NAME, "btnDetailsXml")
             botao_detalhes.click()
             time.sleep(2)
