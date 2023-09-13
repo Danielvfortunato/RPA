@@ -174,13 +174,14 @@ def consultar_rateio_aut(id_rateiocc):
     if conn is not None:
         cursor = conn.cursor()
         query = """
-            SELECT 
-                idcentrocustoshadow 
-                , percentual
-            FROM 
-                rateiocentrocusto 
-            WHERE 
-                idrateiocc = %s
+        select
+            cc.ChaveSistema
+            , rc.percentual
+        FROM 
+            centrocustoshadow cc, rateiocentrocusto rc
+        WHERE 
+            rc.idrateiocc = %s
+            AND cc.id = rc.idcentrocustoshadow
         """
         cursor.execute(query, (id_rateiocc,))
         resultados = cursor.fetchall()
