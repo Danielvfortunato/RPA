@@ -5,7 +5,7 @@ def enviar_email(id_solicitacao, numero_nota):
     senha_do_email = "F39659122332645EAE5F781FFE818E74EE1D"
 
     email = "alertawise@wisemanager.com.br"
-    destinatarios = ["thiago@geracao-motor.com.br", "daniel@geracao-motor.com.br"]
+    destinatarios = ["thiago@geracao-motor.com.br", "daniel@geracao-motor.com.br", "contas@geracao-motor.com.b"]
     assunto = f"Lançamento da SG: {id_solicitacao} efetuado com sucesso pelo RPA"
     corpo_email = f"""
     Número da solicitação: {id_solicitacao}
