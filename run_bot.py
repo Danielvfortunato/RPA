@@ -15,14 +15,14 @@ def run_script():
         if check_if_process_running('SisFin.exe'):
             subprocess.run(['taskkill', '/F', '/IM', 'SisFin.exe'])
             time.sleep(5)
-        
-        if check_if_process_running('chrome.exe'):
-            subprocess.run(['taskkill', '/F', '/IM', 'chrome.exe'])
-            time.sleep(5)
             
         subprocess.run(['python', r'C:\Users\user\Documents\rpa_Project\main.py'])
     else:
         print('main.py is already running. Doing nothing.')
 
+# if __name__ == "__main__":
+#     run_script()
 if __name__ == "__main__":
-    run_script()
+    while True:
+        run_script()
+        time.sleep(60)
