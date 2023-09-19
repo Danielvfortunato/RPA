@@ -244,7 +244,7 @@ def consultar_chat_id():
             from 
                 usuario 
             where 
-                login = 'rpa'
+                login in ('rpa', 'Daniel')
         """
         cursor.execute(query)
         resultados = cursor.fetchall()
