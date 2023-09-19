@@ -15,6 +15,8 @@ import traceback
 import xml.etree.ElementTree as ET
 import math
 import send_mail
+from decimal import Decimal, ROUND_DOWN
+import os
 
 class NbsRpa():
     
@@ -75,6 +77,8 @@ class NbsRpa():
         except TimeoutError as e:
             print(str(e))
             return
+        user.click_input()
+        time.sleep(1)
         user.type_keys("NBS")
         time.sleep(2)
         try:
@@ -82,6 +86,8 @@ class NbsRpa():
         except TimeoutError as e:
             print(str(e))
             return
+        password.click_input()
+        time.sleep(1)
         password.type_keys("gerati2023")
         time.sleep(2)
         try:
@@ -89,6 +95,8 @@ class NbsRpa():
         except TimeoutError as e:
             print(str(e))
             return
+        server.click_input()
+        time.sleep(1)
         server.type_keys("nbs")
         time.sleep(2)
         try:
@@ -251,6 +259,8 @@ class NbsRpa():
             print("Não foi possível se conectar com a janela de cadastro de nf")
             return 
         janela = app[title]
+        time.sleep(2)
+        janela.set_focus()
         print(vencimento_value)
         cpf_cnpj = janela.child_window(class_name="TCPF_CGC")
         esp = janela.child_window(class_name="TOvcDbPictureField", found_index=2)
@@ -272,6 +282,7 @@ class NbsRpa():
         submit_button = janela.child_window(class_name="TPanel", found_index=0)
         barra_boleto = r"C:\Users\user\Documents\RPA_Project\imagens\Barra_Boleto.PNG"
         aba_cfop = janela.child_window(title='CFOP´s', control_type='TabItem')
+        nota_ext = janela.child_window(title="Nota Extemporânea") 
         # Set Comands
         # cpf_cnpj.type_keys(cpf_cnpj_value)
         # cpf_cnpj.type_keys("{ENTER}")
@@ -307,10 +318,22 @@ class NbsRpa():
         observacao.click_input()
         time.sleep(1)
         pyautogui.typewrite(obs)
+        time.sleep(1)
+        try:
+            self.wait_until_interactive(nota_ext)
+        except TimeoutError as e:
+            print(str(e))
+            return
+        data_emissao_xml_value = self.get_data_emissao_from_xml(chave_acesso)
+        mes_xml = int(data_emissao_xml_value.split('-')[1])
+        mes_atual = datetime.datetime.now().month
+        if mes_xml != mes_atual:
+            nota_ext.click_input()
+        time.sleep(2)
         natureza_financeira_list = ['ALUGUEIS A PAGAR', 'COMBUSTÍVEIS/ LUBRIFICANTES', 'CUSTO COMBUSTIVEL NOVOS', 'CUSTO DESPACHANTE NOVOS', 'CUSTO FRETE NOVOS', 'CUSTO NOVOS', 'CUSTO OFICINA', 'DESP DESPACHANTE NOVOS', 'DESP FRETE VEIC NOVOS', 'DESP. COM SERVICOS DE OFICINA', 'DESPESA COM LAVACAO', 'DESPESA OFICINA', 'ENERGIA ELETRICA', 'FRETE', 'HONORARIO PESSOA JURIDICA', 'INFORMATICA HARDWARE', 'INFORMATICA SOFTWARE', 'INTERNET', 'MANUT. E CONSERV. DE', 'MATERIAL DE OFICINA DESPESA', 'PONTO ELETRONICO RA', 'SALARIO ERIBERTO', 'SALARIO MAGU', 'SALARIO VIVIANE', 'SALARIOS RA', 'SERVICO DE TERCEIROS FUNILARIA', 'SERVICOS DE TERCEIRO OFICINA', 'SOFTWARE', 'VALE TRANSPORTE RA', 'VD SALARIO', 'VD VEICULOS NOVOS', 'VIAGENS E ESTADIAS', 'AÇÕES EXTERNAS', 'AÇÕES LOJA', 'ADESIVOS', 'AGENCIA', 'BRINDES E CORTESIAS', 'DECORAÇÃO', 'DESENSOLVIMENTO SITE', 'DESP MKT CHERY FLORIPA', 'DISPARO SMS/WHATS', 'EVENTOS', 'EXPOSITORES', 'FACEBOOK', 'FACEBOOK/INSTAGRAM', 'FEE MENSAL', 'FEIRA/EVENTOS', 'FEIRAO', 'FOLLOWISE (MKT)', 'GOOGLE', 'INFLUENCIADORES', 'INSTITUCIONAL', 'INTEGRADOR (MKT)', 'JORNAL', 'LANCAMENTOS', 'LED', 'MARKETING', 'MERCADO LIVRE', 'MIDIA ON OUTROS', 'MIDIA/ONLINE', 'MKT', 'OUTDOOR', 'PANFLETOS', 'PATROCINIO', 'PORTAL GERACAO', 'PROSPECÇÃO', 'PUBLICIDADE E PROPAGANDA', 'RADIO', 'RD (MKT)', 'REGISTRO SITE', 'SISTEMAS (MKT)', 'SYONET AUTOMOVEIS', 'TELEVISAO', 'VENDAS EXTERNAS', 'VIDEOS', 'VITRINE', 'WISE (MKT)']
         if not all(r[0] == "2" for r in rateios) or not all(r[0] == "2" for r in rateios_aut):
             if natureza_financeira_value in natureza_financeira_list:
-                time.sleep(1)
+                time.sleep(2)
                 check_pis_cofins = janela.child_window(class_name="TCheckBox", found_index=0)
                 try:
                     self.wait_until_interactive(check_pis_cofins)
@@ -435,25 +458,26 @@ class NbsRpa():
         grouped_by_nature = {}
         for item in cfop_results:
             cfop = item['CFOP']
+            cst = item.get('CST')  # Busca CST. Se não existir, será None.
             valor_float = float(item['vProd'].replace(',', '.'))
-            mapped_value = CFOP_MAPPING.get(cfop, default_value)
-
+            if cfop == "5929" and cst in ("10", "30", "60", "70"):
+                mapped_value = '1407'
+            else:
+                mapped_value = CFOP_MAPPING.get(cfop, default_value)
             if mapped_value in grouped_by_nature:
                 grouped_by_nature[mapped_value] += valor_float
             else:
                 grouped_by_nature[mapped_value] = valor_float
-
-        valor_total_float = float(valor_value.replace(',', '.'))
-        valor_already_added = 0
-
-        for idx, (mapped_value, total) in enumerate(grouped_by_nature.items()):
-            # Se não for o último item, use o valor total desse código de natureza
-            if idx != len(grouped_by_nature) - 1:
-                valor = round(total, 2)
+        valor_total_decimal = Decimal(valor_value.replace(',', '.'))
+        grouped_by_decimal = {k: Decimal(v).quantize(Decimal('0.01')) for k, v in grouped_by_nature.items()}
+        valor_already_added = Decimal(0)
+        for idx, (mapped_value, total) in enumerate(grouped_by_decimal.items()):
+            if idx != len(grouped_by_decimal) - 1:
+                valor = total.quantize(Decimal('0.01'))
                 valor_already_added += valor
-            else: # Se for o último item, ajuste para o total da nota
-                valor = valor_total_float - valor_already_added
-                
+            else:  # Se for o último item, ajuste para o total da nota
+                valor = valor_total_decimal - valor_already_added
+
             valor_str = str(valor).replace('.', ',')
             self.execute_rpa_actions(mapped_value, valor_str)
 
@@ -508,7 +532,11 @@ class NbsRpa():
                     loop_continue = False
                     break
         time.sleep(2)
-        self.inserir_rateio(rateios, conta_contabil, valor_sg, valor_value, usa_rateio_centro_custo, rateios_aut)
+        compare_values = self.compare_values_rateio()
+        if compare_values == False:
+            self.click_specific_button(raio)
+        else:
+            self.inserir_rateio(rateios, conta_contabil, valor_sg, valor_value, usa_rateio_centro_custo, rateios_aut)
         time.sleep(2)
         try:
             self.wait_until_interactive(tab_faturamento)
@@ -536,12 +564,12 @@ class NbsRpa():
             return
         tipo_pagamento.click_input()
         if tipo_pagamento_value in ('B','A'):
-            pyautogui.typewrite('Boleto Bancario')
+            pyautogui.typewrite('Boleto')
             pyautogui.press('tab')
         elif tipo_pagamento_value in ('P','D'):
             pyautogui.typewrite('Deposito')
             pyautogui.press('tab')
-        elif tipo_pagamento_value in ('E', 'C'):
+        elif tipo_pagamento_value in ('E', 'C', 'O'):
             pyautogui.typewrite('Especie')
             pyautogui.press('tab')
         try:
@@ -799,7 +827,7 @@ class NbsRpa():
         for _ in range(2):
             pyautogui.press('enter')
             time.sleep(1)
-        time.sleep(4)
+        time.sleep(3)
         pyautogui.hotkey('ctrl', 'w')
 
     def click_specific_button(self, button_image_path, confidence_level=0.8):
@@ -1134,7 +1162,7 @@ class NbsRpa():
         return datetime.date(year, month, day) 
         
     def check_conditions(self, tipo_docto, chave_acesso, serie, natureza, vencimento, inss, irff, piscofinscsl, tipo_pagamento, icms, boletos):
-        current_date = datetime.date.today()  # Pegando apenas a data, sem hora, minuto, segundo, etc.
+        current_date = datetime.date.today()
         converted_vencimento = self.convert_to_date(vencimento)
         # if tipo_docto != "NFE":
         #     return False, "Tipo de documento inválido"
@@ -1161,54 +1189,81 @@ class NbsRpa():
             return False, "irff encontrado"
         if piscofinscsl:
             return False, "piscofinscsl encontrado"
-        if tipo_pagamento not in ('B', 'A', 'P', 'D', 'E', 'C'):
+        if tipo_pagamento not in ('B', 'A', 'P', 'D', 'E', 'C', 'O'):
             return False, "tipo de pagamento diferente do configurado"
         
         return True, "Condições aceitas"
         
     def send_message_pre_verification(self, msg, id_solicitacao, numerodocto):
         # chat_id = '-995541913' 
-        chat_id_result = database.consultar_chat_id()
+        chat_ids_results = database.consultar_chat_id()
         token_result = database.consultar_token_bot()
-        chat_id = chat_id_result[0][0]
+        chat_id1, chat_id2 = chat_ids_results[0][0], chat_ids_results[1][0]
+        chat_ids = [chat_id1, chat_id2] 
         token = token_result[0][0]
         # base_url = f"https://api.telegram.org/bot6563290849:AAEVdZmaKFWOTmUdIYeAcGhq3_cUu4sX2qE/sendMessage"
         base_url = f"https://api.telegram.org/bot{token}/sendMessage"
-        payload = {
-            'chat_id': chat_id,
-            'text': f"[ERROR]: {msg}, id_solicitacao: {id_solicitacao}, numero_docto: {numerodocto}"
-        }
-        response = requests.post(base_url, data=payload)
-        if response.status_code != 200:
-            print(f"Failed to send message. Response: {response.content}")
-        else:
-            print("Message sent successfully to Telegram!")
+        for chat_id in chat_ids:
+            payload = {
+                'chat_id': chat_id,
+                'text': f"[ERROR]: {msg}, id_solicitacao: {id_solicitacao}, numero_docto: {numerodocto}"
+            }
+            response = requests.post(base_url, data=payload)
+            if response.status_code != 200:
+                print(f"Failed to send message. Response: {response.content}")
+            else:
+                print("Message sent successfully to Telegram!")
 
     def send_message_with_traceback(self, id_solicitacao, numerodocto):
-        chat_id_result = database.consultar_chat_id()
+        chat_ids_results = database.consultar_chat_id()
         token_result = database.consultar_token_bot()
-        chat_id = chat_id_result[0][0]
+        chat_id1, chat_id2 = chat_ids_results[0][0], chat_ids_results[1][0]
+        chat_ids = [chat_id1, chat_id2] 
         token = token_result[0][0]
         error_message = traceback.format_exc()
         detailed_msg = f"[TRACEBACK ERROR]: {error_message}, id_solicitacao: {id_solicitacao}, numero_docto: {numerodocto}"
-        # chat_id = '-995541913' 
-        # base_url = f"https://api.telegram.org/bot6563290849:AAEVdZmaKFWOTmUdIYeAcGhq3_cUu4sX2qE/sendMessage"
+        
         base_url = f"https://api.telegram.org/bot{token}/sendMessage"
-        payload = {
-            'chat_id': chat_id,
-            'text': detailed_msg
-        }
-        response = requests.post(base_url, data=payload)
-        if response.status_code != 200:
-            print(f"Failed to send traceback message. Response: {response.content}")
-        else:
-            print("Traceback message sent successfully to Telegram!")
+
+        for chat_id in chat_ids:
+            payload = {
+                'chat_id': chat_id,
+                'text': detailed_msg
+            }
+            response = requests.post(base_url, data=payload)
+            if response.status_code != 200:
+                print(f"Failed to send traceback message to chat_id {chat_id}. Response: {response.content}")
+            else:
+                print(f"Traceback message sent successfully to chat_id {chat_id} on Telegram!")
+
+    def send_success_message(self, id_solicitacao, numero_nota):
+        chat_ids_results = database.consultar_chat_id()
+        token_result = database.consultar_token_bot()
+
+        chat_id1, chat_id2 = chat_ids_results[0][0], chat_ids_results[1][0]
+        chat_ids = [chat_id1, chat_id2]
+
+        token = token_result[0][0]
+        success_msg = f"Lançamento efetuado com sucesso, id solicitacao: {id_solicitacao}, numero da nota: {numero_nota}"
+        
+        base_url = f"https://api.telegram.org/bot{token}/sendMessage"
+
+        for chat_id in chat_ids:
+            payload = {
+                'chat_id': chat_id,
+                'text': success_msg
+            }
+            response = requests.post(base_url, data=payload)
+            if response.status_code != 200:
+                print(f"Failed to send success message to chat_id {chat_id}. Response: {response.content}")
+            else:
+                print(f"Success message sent successfully to chat_id {chat_id} on Telegram!")
 
     def get_data_from_xml(self, chave_acesso):
         path = rf'C:\Users\user\Downloads\{chave_acesso}.xml'
         tree = ET.parse(path)
         root = tree.getroot()
-        # Identifica o namespace
+
         ns = None
         for elem in root.iter():
             if '}' in elem.tag:
@@ -1216,27 +1271,105 @@ class NbsRpa():
                 break
         if ns is None:
             raise ValueError("Namespace não encontrado no XML.")
-        # Processa os elementos <det> para obter CFOP, vProd e vDesc
+        
         cfop_values = {}
         det_elements = root.findall('.//ns:det', namespaces=ns)
         for det in det_elements:
             cfop_elem = det.find('.//ns:CFOP', namespaces=ns)
             vprod_elem = det.find('.//ns:vProd', namespaces=ns)
             vdesc_elem = det.find('.//ns:vDesc', namespaces=ns)
+            
+            icms_element = det.find('.//ns:ICMS', namespaces=ns)
+            cst_elem = None
+            if icms_element is not None:
+                for child in icms_element:
+                    cst_elem = child.find('.//ns:CST', namespaces=ns)
+                    if cst_elem is not None:
+                        break
+            cst = cst_elem.text if cst_elem is not None else None
+
             if cfop_elem is not None and vprod_elem is not None:
                 cfop = cfop_elem.text
                 vprod = float(vprod_elem.text.replace(',', '.')) # Converte para float considerando a vírgula
                 if vdesc_elem is not None:
                     vprod -= float(vdesc_elem.text.replace(',', '.')) # Desconta o valor vDesc se ele existir
+                
                 # Arredonda o valor para 2 casas decimais
                 vprod = math.ceil(vprod * 100) / 100
                 if cfop in cfop_values:
                     cfop_values[cfop] += vprod  # Soma o valor vProd ao CFOP existente
                 else:
                     cfop_values[cfop] = vprod  # Cria uma nova entrada para o CFOP com o valor vProd
+
         # Converte o dicionário processado em uma lista de dicionários, formatando o valor para string
-        results = [{'CFOP': key, 'vProd': str(value).replace('.', ',')} for key, value in cfop_values.items()]
+        results = [{'CFOP': key, 'vProd': str(value).replace('.', ','), 'CST': cst} for key, value in cfop_values.items()]
         return results
+
+    def get_data_emissao_from_xml(self, chave_acesso):
+        path = rf'C:\Users\user\Downloads\{chave_acesso}.xml'
+        tree = ET.parse(path)
+        root = tree.getroot()
+        ns = None
+        for elem in root.iter():
+            if '}' in elem.tag:
+                ns = {'ns': elem.tag.split('}')[0].strip('{')}
+                break
+        if ns is None:
+            raise ValueError("Namespace não encontrado no XML.")
+        dhemi_element = root.find('.//ns:dhEmi', namespaces=ns)
+        if dhemi_element is not None:
+            date_string = dhemi_element.text
+            date_part = date_string.split('T')[0]
+            date_object = datetime.datetime.strptime(date_part, "%Y-%m-%d")
+            formatted_date = date_object.strftime('%d-%m-%Y')
+            
+            return formatted_date
+
+    def remover_arquivo_nota(self, numerodoct, id_solicitacao):
+        nome_arquivo = f"nota_{numerodoct}{id_solicitacao}.pdf"
+        caminho_arquivo = os.path.join('C:\\Users\\user\\Documents\\APs', nome_arquivo)
+        
+        if os.path.exists(caminho_arquivo):
+            try:
+                os.remove(caminho_arquivo)
+                print(f"Arquivo {nome_arquivo} removido com sucesso!")
+            except Exception as e:
+                print(f"Erro ao tentar remover o arquivo {nome_arquivo}. Erro: {e}")
+        else:
+            print(f"Arquivo {nome_arquivo} não existe.")
+
+    def remover_arquivo_chave_acesso(self, chave_acesso):
+        nome_arquivo = f"{chave_acesso}.xml"
+        caminho_arquivo = os.path.join('C:\\Users\\user\\Downloads', nome_arquivo)
+        
+        if os.path.exists(caminho_arquivo):
+            try:
+                os.remove(caminho_arquivo)
+                print(f"Arquivo {nome_arquivo} removido com sucesso!")
+            except Exception as e:
+                print(f"Erro ao tentar remover o arquivo {nome_arquivo}. Erro: {e}")
+        else:
+            print(f"Arquivo {nome_arquivo} não existe.")
+
+    def compare_values_rateio(self):
+        title = "Entrada Diversas / Operação: 52-Entrada Diversas"
+        if not self.esperar_janela_visivel(title, timeout=60):
+            print("Falha: Janela de Entrada Diversas / Operação: 52-Entrada Diversas não está visível.")
+            return
+        time.sleep(2)
+        try:
+            app = Application(backend='uia').connect(title=title)
+        except ElementNotFoundError:
+            print("Não foi possível se conectar com a janela de Entrada Diversas / Operação: 52-Entrada Diversas")
+            return False  
+        janela = app[title]
+        disponivel = janela.child_window(class_name="TOvcPictureField", found_index=3)
+        valor_disponivel = disponivel.legacy_properties()['Name'].replace(" ", "")
+        v_total_control = janela.child_window(class_name="TOvcDbPictureField", found_index=0)
+        valor_total = v_total_control.legacy_properties()['Name'].replace(" ", "")
+        
+        return valor_disponivel == valor_total
+
     
     def funcao_main(self):
         registros = database.consultar_dados_cadastro()
@@ -1258,10 +1391,18 @@ class NbsRpa():
                 piscofinscsl = notas_fiscais[0][8]
                 iss = notas_fiscais[0][9]
                 vencimento_value = notas_fiscais[0][4]
+            time.sleep(1)
+            self.remover_arquivo_nota(numerodocto, id_solicitacao)
+            time.sleep(1)
             wise_instance = Wise()
             wise_instance.get_nf_values(numerodocto, id_solicitacao)
             time.sleep(2)
             wise_instance.save_as(numerodocto, id_solicitacao)
+            google_focus = r"C:\Users\user\Documents\RPA_Project\imagens\google_focus.PNG"
+            time.sleep(1)
+            self.click_specific_button(google_focus)
+            time.sleep(3)
+            wise_instance.fechar_aba()
             time.sleep(1)
             chave_de_acesso_value = self.get_chave_acesso(numerodocto, id_solicitacao)
             print(chave_de_acesso_value)
@@ -1272,14 +1413,7 @@ class NbsRpa():
             boletos = database.consultar_boleto(id_solicitacao)
             time.sleep(1)
             success, message = self.check_conditions(tipo_docto_value, chave_de_acesso_value, serie_nota, natureza_value, vencimento_value, inss, irff, piscofinscsl, tipo_pagamento_value, icms, boletos)  
-            time.sleep(3)
-            self.back_to_nbs()
             time.sleep(2)
-            wise_instance.fechar_aba()
-            time.sleep(5)
-            # time.sleep(1)
-            # except: 
-            #     self.send_message_with_traceback(id_solicitacao, numerodocto)
             if success:
                 # try:
                 wise_instance.get_xml(chave_de_acesso_value)
@@ -1346,12 +1480,16 @@ class NbsRpa():
                 self.back_to_nbs()
                 time.sleep(2)
                 self.close_aplications_half()
+                time.sleep(1)
+                self.send_success_message(id_solicitacao, numerodocto)
                 time.sleep(3)
                 # except:
                 #     self.send_message_with_traceback(id_solicitacao, numerodocto)
             else:
                 self.send_message_pre_verification(message, id_solicitacao, numerodocto)
                 database.autoriza_rpa_para_n(id_solicitacao)
+                time.sleep(2)
+                self.back_to_nbs()
             
 rpa = NbsRpa()
 rpa.funcao_main()
