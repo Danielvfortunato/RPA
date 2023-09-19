@@ -7,8 +7,10 @@ import time
 from pywinauto import Application
 from pywinauto.findwindows import ElementNotFoundError
 import pyautogui
+from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support.select import Select
 import pygetwindow as gw
+from selenium.webdriver.support import expected_conditions as EC
 
 class Wise():
     def __init__(self):
@@ -75,7 +77,7 @@ class Wise():
 
     def init_instance_chrome(self):
         chrome_options = Options()
-        # chrome_options.add_argument("--start-maximized")
+        chrome_options.add_argument("--start-maximized")
         chrome_options.add_experimental_option("debuggerAddress", "127.0.0.1:9222")
         if not self.driver:
             # service = Service(executable_path='./chromedriver.exe')
@@ -85,41 +87,42 @@ class Wise():
         return self.driver
 
     def login(self):
-            username_field = self.driver.find_element(By.NAME, "j_username")
-            password_field = self.driver.find_element(By.NAME, "j_password")
-            username_field.send_keys('rpa')
-            password_field.send_keys('Da131800!')
-            password_field.submit()
+        username_field = WebDriverWait(self.driver, 60).until(EC.presence_of_element_located((By.NAME, "j_username")))
+        password_field = WebDriverWait(self.driver, 60).until(EC.presence_of_element_located((By.NAME, "j_password")))
+        username_field.send_keys('rpa')
+        password_field.send_keys('Da131800!')
+        password_field.submit()
 
     def Anexar_AP(self, id_solicitacao, num_controle, num_docto):
         self.start_chrome_debugger()
         self.init_instance_chrome()
-        time.sleep(2)
         self.driver.get("https://gera.wisemanager.com.br/WiseManagerBI/#/financeiro/efetivacaoSolicitacaoGastoNew")
+        time.sleep(3)
         if self.driver.find_elements(By.NAME, "j_username") and self.driver.find_elements(By.NAME, "j_password"):
             self.login()
-        time.sleep(10)
-        select_element = self.driver.find_element(By.CSS_SELECTOR, 'select.form-control.input-sm[ng-model="filtro.campo"]')
+        time.sleep(2)
+        select_element = WebDriverWait(self.driver, 60).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'select.form-control.input-sm[ng-model="filtro.campo"]')))
         select = Select(select_element)
         select.select_by_value('id')
-        time.sleep(3)
-        input_element = self.driver.find_element(By.CSS_SELECTOR, 'input.form-control.input-sm.filter-picker-round[ng-model="filtro.texto"]')
+        time.sleep(2)
+        input_element = WebDriverWait(self.driver, 60).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'input.form-control.input-sm.filter-picker-round[ng-model="filtro.texto"]')))
         input_element.send_keys(id_solicitacao)
-        time.sleep(3)
-        search = self.driver.find_element(By.CSS_SELECTOR, 'button.btn.btn-circle.btn-bordered.thick.btn-primary.imt-5')
+        time.sleep(2)
+        search = WebDriverWait(self.driver, 60).until(EC.element_to_be_clickable((By.CSS_SELECTOR, 'button.btn.btn-circle.btn-bordered.thick.btn-primary.imt-5')))
         search.click()
-        time.sleep(10)
-        open_detail = self.driver.find_element(By.XPATH, "//button[contains(@ng-click, 'abreDetalheSolicitacao')]")
+        time.sleep(2)
+        open_detail = WebDriverWait(self.driver, 60).until(EC.element_to_be_clickable((By.XPATH, "//button[contains(@ng-click, 'abreDetalheSolicitacao')]")))
         open_detail.click()
-        time.sleep(5)
-        numeros_docto = self.driver.find_elements(By.NAME, "numeroDocto")
-        controles = self.driver.find_elements(By.NAME, "numeroControle")
-        for numero_docto, controle in zip(numeros_docto, controles):
-            valor_docto = numero_docto.get_attribute('value')
+        time.sleep(2)
+        numeros_docto = WebDriverWait(self.driver, 60).until(EC.presence_of_all_elements_located((By.NAME, "numeroDocto")))
+        controles = WebDriverWait(self.driver, 60).until(EC.presence_of_all_elements_located((By.NAME, "numeroControle")))
+        time.sleep(2)
+        for numero_docto_el, controle in zip(numeros_docto, controles):
+            valor_docto = numero_docto_el.get_attribute('value')
             if valor_docto == num_docto:
                 controle.send_keys(num_controle)
-        time.sleep(3)
-        file_input = self.driver.find_element(By.XPATH, "//input[@class='file-input']")
+        time.sleep(2)
+        file_input = WebDriverWait(self.driver, 60).until(EC.presence_of_element_located((By.XPATH, "//input[@class='file-input']")))
         self.driver.execute_script("arguments[0].click();", file_input)
 
     def get_pdf_file(self, numero_docto, id_solicitacao):
@@ -148,22 +151,19 @@ class Wise():
     def confirm(self):
         url_esperada = "https://gera.wisemanager.com.br/WiseManagerBI/#/financeiro/efetivacaoSolicitacaoGastoNew"
         if self.driver.current_url == url_esperada:
-            controles = self.driver.find_elements(By.NAME, "numeroControle")
+            controles = WebDriverWait(self.driver, 60).until(EC.presence_of_all_elements_located((By.NAME, "numeroControle")))
             todos_preenchidos = all(controle.get_attribute('value') != "" for controle in controles if controle.is_displayed())
             if todos_preenchidos:
-                botao_confirmar = self.driver.find_element(By.XPATH, "//button[contains(@title, 'Confirma Lançamento no ERP')]")
-                time.sleep(3)
+                botao_confirmar = WebDriverWait(self.driver, 60).until(EC.element_to_be_clickable((By.XPATH, "//button[contains(@title, 'Confirma Lançamento no ERP')]")))
+                self.driver.execute_script("arguments[0].scrollIntoView();", botao_confirmar)
                 pyautogui.scroll(1000)
-                time.sleep(2)
                 botao_confirmar.click()
-                time.sleep(2)
-                confirmar = r"C:\Users\user\Documents\RPA_Project\imagens\Confirmar.PNG"
-                time.sleep(4)
-                self.click_specific_button_wise(confirmar)
                 time.sleep(3)
+                confirmar = r"C:\Users\user\Documents\RPA_Project\imagens\Confirmar.PNG"
+                self.click_specific_button_wise(confirmar)
             else:
                 print("Nem todos os controles estão preenchidos. Não foi possível confirmar.")
-            
+                
     def click_specific_button_wise(self, button_image_path, confidence_level=0.8):
         button_location = pyautogui.locateOnScreen(button_image_path, confidence=confidence_level)
         if button_location:
@@ -182,22 +182,22 @@ class Wise():
         self.driver.get("https://gera.wisemanager.com.br/WiseManagerBI/#/financeiro/efetivacaoSolicitacaoGastoNew")
         if self.driver.find_elements(By.NAME, "j_username") and self.driver.find_elements(By.NAME, "j_password"):
             self.login()
-            time.sleep(10)
-        select_element = self.driver.find_element(By.CSS_SELECTOR, 'select.form-control.input-sm[ng-model="filtro.campo"]')
+            time.sleep(2)
+        select_element = WebDriverWait(self.driver, 60).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'select.form-control.input-sm[ng-model="filtro.campo"]')))
         select = Select(select_element)
         select.select_by_value('id')
-        time.sleep(3)
-        input_element = self.driver.find_element(By.CSS_SELECTOR, 'input.form-control.input-sm.filter-picker-round[ng-model="filtro.texto"]')
+        time.sleep(2)
+        input_element = WebDriverWait(self.driver, 60).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'input.form-control.input-sm.filter-picker-round[ng-model="filtro.texto"]')))
         input_element.send_keys(id_solicitacao)
-        time.sleep(3)
-        search = self.driver.find_element(By.CSS_SELECTOR, 'button.btn.btn-circle.btn-bordered.thick.btn-primary.imt-5')
+        time.sleep(2)
+        search = WebDriverWait(self.driver, 60).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'button.btn.btn-circle.btn-bordered.thick.btn-primary.imt-5')))
         search.click()
-        time.sleep(10)
-        open_detail = self.driver.find_element(By.XPATH, "//button[contains(@ng-click, 'abreDetalheSolicitacao')]")
+        time.sleep(2)
+        open_detail = WebDriverWait(self.driver, 60).until(EC.presence_of_element_located((By.XPATH, "//button[contains(@ng-click, 'abreDetalheSolicitacao')]")))
         open_detail.click()
-        time.sleep(3)
-        numeros_docto = self.driver.find_elements(By.NAME, "numeroDocto")
-        link_elements = self.driver.find_elements(By.XPATH, "//a[contains(@ng-show, '.pdf') and contains(translate(@href, 'PDF', 'pdf'), '.pdf') and contains(@href, 'anexo/solicitacaoGasto')]")
+        time.sleep(2)
+        numeros_docto = WebDriverWait(self.driver, 60).until(EC.presence_of_all_elements_located((By.NAME, "numeroDocto")))
+        link_elements = WebDriverWait(self.driver, 60).until(EC.presence_of_all_elements_located((By.XPATH, "//a[contains(@ng-show, '.pdf') and contains(translate(@href, 'PDF', 'pdf'), '.pdf') and contains(@href, 'anexo/solicitacaoGasto')]")))
         for numero_docto, link_element in zip(numeros_docto, link_elements):
             valor_docto = numero_docto.get_attribute('value')
             if str(valor_docto) == str(num_docto) and link_element.is_displayed():
@@ -242,23 +242,23 @@ class Wise():
                 time.sleep(1)
                 botao_entrar = self.driver.find_element(By.NAME, "btnSubmit")
                 botao_entrar.click()          
-            time.sleep(5)
-            botao_xml = self.driver.find_element(By.XPATH, "//span[text()=\"Xml's Baixados\"]")
+            time.sleep(2)
+            botao_xml = WebDriverWait(self.driver, 60).until(EC.element_to_be_clickable((By.XPATH, "//span[text()=\"Xml's Baixados\"]")))
             botao_xml.click()
             time.sleep(2)
-            botao_opcoes = self.driver.find_element(By.ID, "btnOptions")
+            botao_opcoes = WebDriverWait(self.driver, 60).until(EC.element_to_be_clickable((By.ID, "btnOptions")))
             botao_opcoes.click()
             time.sleep(2)
-            campo_texto = self.driver.find_element(By.ID, "xmlKeyDownload")
+            campo_texto = WebDriverWait(self.driver, 60).until(EC.presence_of_element_located((By.ID, "xmlKeyDownload")))
             campo_texto.send_keys(chave_acesso)
             time.sleep(2)
-            botao_pesquisar = self.driver.find_element(By.XPATH, "//a[contains(@onclick, 'SearchXmlDownload')]")
+            botao_pesquisar = WebDriverWait(self.driver, 60).until(EC.element_to_be_clickable((By.XPATH, "//a[contains(@onclick, 'SearchXmlDownload')]")))
             botao_pesquisar.click()
-            time.sleep(5)
-            botao_detalhes = self.driver.find_element(By.CLASS_NAME, "btnDetailsXml")
+            time.sleep(2)
+            botao_detalhes = WebDriverWait(self.driver, 60).until(EC.element_to_be_clickable((By.CLASS_NAME, "btnDetailsXml")))
             botao_detalhes.click()
             time.sleep(2)
-            botao_download = self.driver.find_element(By.ID, "btnDownloadXmlHub")
+            botao_download = WebDriverWait(self.driver, 60).until(EC.element_to_be_clickable((By.ID, "btnDownloadXmlHub")))
             botao_download.click()
 
 
