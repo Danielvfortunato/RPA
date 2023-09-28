@@ -283,6 +283,7 @@ class NbsRpa():
         barra_boleto = r"C:\Users\user\Documents\RPA_Project\imagens\Barra_Boleto.PNG"
         aba_cfop = janela.child_window(title='CFOP´s', control_type='TabItem')
         nota_ext = janela.child_window(title="Nota Extemporânea") 
+        regime_norma = janela.child_window(title='Docto Fiscal emitido com base em Regime Esp. ou Norma Específica')
         # Set Comands
         # cpf_cnpj.type_keys(cpf_cnpj_value)
         # cpf_cnpj.type_keys("{ENTER}")
@@ -294,21 +295,21 @@ class NbsRpa():
         # sr.type_keys(serie)
         # data_emissao.type_keys(data_emissao_value)
         # vlr_nf.type_keys(valor_value)
-        time.sleep(1)
-        if inss is not None or irff is not None or piscofinscsl is not None or iss is not None:
-            if inss > 0 or irff > 0 or piscofinscsl > 0 or iss > 0:
-                detalhe_nota = janela.child_window(title="Valores da Nota", class_name="TTabSheet")
-                irff_detail = detalhe_nota.child_window(class_name="TOvcDbPictureField", found_index=11)
-                try:
-                    self.wait_until_interactive(irff_detail)
-                except TimeoutError as e:
-                    print(str(e))
-                    return
-                irff_detail.click_input()
-                time.sleep(1)
-                pyautogui.press("tab")
-                time.sleep(3)
-                self.calculo_tributos(inss, irff, piscofinscsl, iss, valor_value)
+        # time.sleep(1)
+        # if inss is not None or irff is not None or piscofinscsl is not None or iss is not None:
+        #     if inss > 0 or irff > 0 or piscofinscsl > 0 or iss > 0:
+        #         detalhe_nota = janela.child_window(title="Valores da Nota", class_name="TTabSheet")
+        #         irff_detail = detalhe_nota.child_window(class_name="TOvcDbPictureField", found_index=11)
+        #         try:
+        #             self.wait_until_interactive(irff_detail)
+        #         except TimeoutError as e:
+        #             print(str(e))
+        #             return
+        #         irff_detail.click_input()
+        #         time.sleep(1)
+        #         pyautogui.press("tab")
+        #         time.sleep(3)
+        #         self.calculo_tributos(inss, irff, piscofinscsl, iss, valor_value)
         time.sleep(1)
         try:
             self.wait_until_interactive(observacao)
@@ -330,6 +331,16 @@ class NbsRpa():
         if mes_xml != mes_atual:
             nota_ext.click_input()
         time.sleep(2)
+
+        cfop_results = self.get_data_from_xml(chave_acesso)
+        time.sleep(1)
+        numero_serie = self.get_serie_from_xml(chave_acesso)
+        has_cfop_starting_with_59 = any(item['CFOP'].startswith("59") for item in cfop_results)
+
+        if numero_serie in ('890', '891','892','893','894','895','896','897','898','899') or has_cfop_starting_with_59:
+            regime_norma.click_input()
+        time.sleep(2)
+
         natureza_financeira_list = ['ALUGUEIS A PAGAR', 'COMBUSTÍVEIS/ LUBRIFICANTES', 'CUSTO COMBUSTIVEL NOVOS', 'CUSTO DESPACHANTE NOVOS', 'CUSTO FRETE NOVOS', 'CUSTO NOVOS', 'CUSTO OFICINA', 'DESP DESPACHANTE NOVOS', 'DESP FRETE VEIC NOVOS', 'DESP. COM SERVICOS DE OFICINA', 'DESPESA COM LAVACAO', 'DESPESA OFICINA', 'ENERGIA ELETRICA', 'FRETE', 'HONORARIO PESSOA JURIDICA', 'INFORMATICA HARDWARE', 'INFORMATICA SOFTWARE', 'INTERNET', 'MANUT. E CONSERV. DE', 'MATERIAL DE OFICINA DESPESA', 'PONTO ELETRONICO RA', 'SALARIO ERIBERTO', 'SALARIO MAGU', 'SALARIO VIVIANE', 'SALARIOS RA', 'SERVICO DE TERCEIROS FUNILARIA', 'SERVICOS DE TERCEIRO OFICINA', 'SOFTWARE', 'VALE TRANSPORTE RA', 'VD SALARIO', 'VD VEICULOS NOVOS', 'VIAGENS E ESTADIAS', 'AÇÕES EXTERNAS', 'AÇÕES LOJA', 'ADESIVOS', 'AGENCIA', 'BRINDES E CORTESIAS', 'DECORAÇÃO', 'DESENSOLVIMENTO SITE', 'DESP MKT CHERY FLORIPA', 'DISPARO SMS/WHATS', 'EVENTOS', 'EXPOSITORES', 'FACEBOOK', 'FACEBOOK/INSTAGRAM', 'FEE MENSAL', 'FEIRA/EVENTOS', 'FEIRAO', 'FOLLOWISE (MKT)', 'GOOGLE', 'INFLUENCIADORES', 'INSTITUCIONAL', 'INTEGRADOR (MKT)', 'JORNAL', 'LANCAMENTOS', 'LED', 'MARKETING', 'MERCADO LIVRE', 'MIDIA ON OUTROS', 'MIDIA/ONLINE', 'MKT', 'OUTDOOR', 'PANFLETOS', 'PATROCINIO', 'PORTAL GERACAO', 'PROSPECÇÃO', 'PUBLICIDADE E PROPAGANDA', 'RADIO', 'RD (MKT)', 'REGISTRO SITE', 'SISTEMAS (MKT)', 'SYONET AUTOMOVEIS', 'TELEVISAO', 'VENDAS EXTERNAS', 'VIDEOS', 'VITRINE', 'WISE (MKT)']
         if not all(r[0] == "2" for r in rateios) or not all(r[0] == "2" for r in rateios_aut):
             if natureza_financeira_value in natureza_financeira_list:
@@ -361,82 +372,6 @@ class NbsRpa():
                 pyautogui.typewrite('Aquisicao de bens utilizados como insumo')
                 time.sleep(2)
                 pyautogui.press('tab')
-        # se for nota fiscal de produto 
-        # habilitar_livro = janela.child_window(title='Quero esta nota no livro fiscal')
-        # time.sleep(2)
-        # habilitar_livro.click_input()
-        # chave_acesso = self.get_chave_acesso(num_nf_value, id_solicitacao)
-        # modelo = self.get_modelo(chave_acesso)
-        # time.sleep(2)
-        # janela_chave_modelo = janela.child_window(title="Modelo Fiscal / Chave e Outros")
-        # janela_chave_modelo.click_input()
-        # time.sleep(1)
-        # modelo_fiscal = janela.child_window(class_name='TwwDBLookupCombo', found_index=0)
-        # modelo_fiscal.click_input()
-        # time.sleep(1)
-        # if modelo == '55':
-        #     modelo_fiscal.click_input()
-        #     time.sleep(1)
-        #     pyautogui.typewrite('nota fiscal eletronica')
-        # elif modelo == '10':
-        #     modelo_fiscal.click_input()
-        #     time.sleep(1)
-        #     pyautogui.typewrite('Conhecimento Aereo')
-        # elif modelo == '67':
-        #     modelo_fiscal.click_input()
-        #     time.sleep(1)
-        #     pyautogui.typewrite('Conhecimento de transp eletronico')
-        # elif modelo == '9':
-        #     modelo_fiscal.click_input()
-        #     time.sleep(1)
-        #     pyautogui.typewrite('Conhecimento de Transporte Aquaviario de cargas')
-        # elif modelo == '57':
-        #     modelo_fiscal.click_input()
-        #     time.sleep(1)
-        #     pyautogui.typewrite('Conhecimento de transporte eletronico - CT-e')
-        # elif modelo == '11':
-        #     modelo_fiscal.click_input()
-        #     time.sleep(1)
-        #     pyautogui.typewrite('Conhecimento de Transporte Ferroviario de Cargas')
-        # elif modelo == '8':
-        #     modelo_fiscal.click_input()
-        #     time.sleep(1)
-        #     pyautogui.typewrite('Conhecimento de Transporte Rodoviario de cargas')
-        # elif modelo == '1B':
-        #     modelo_fiscal.click_input()
-        #     time.sleep(1)
-        #     pyautogui.typewrite('NOTA FISCAL AVULSA')
-        # elif modelo == '66':
-        #     modelo_fiscal.click_input()
-        #     time.sleep(1)
-        #     pyautogui.typewrite('NOTA FISCAL DE ENERGIA ELETRICA ELETRONICA')
-        # elif modelo == '29':
-        #     modelo_fiscal.click_input()
-        #     time.sleep(1)
-        #     pyautogui.typewrite('Nota Fiscal/Conta de Fornecimento')
-        # elif modelo == '1':
-        #     modelo_fiscal.click_input()
-        #     time.sleep(1)
-        #     pyautogui.typewrite('NotaFiscal')
-        # elif modelo == '21':
-        #     modelo_fiscal.click_input()
-        #     time.sleep(1)
-        #     pyautogui.typewrite('NotaFiscal de Servico de Comunicacao')
-        # elif modelo == '22':
-        #     modelo_fiscal.click_input()
-        #     time.sleep(1)
-        #     pyautogui.typewrite('NotaFiscal de Servico de Telecomunicacoes')
-        # elif modelo == '7':
-        #     modelo_fiscal.click_input()
-        #     time.sleep(1)
-        #     pyautogui.typewrite('NotaFiscal de Servico de Transporte')
-        # elif modelo == '6':
-        #     modelo_fiscal.click_input()
-        #     time.sleep(1)
-        #     pyautogui.typewrite('NotaFiscal/Conta de Energia Eletrica')
-        # time.sleep(1)
-        # chave_nfe = janela.child_window(class_name='TDBEdit', found_index=6)
-        # chave_nfe.type_keys(chave_acesso)
         time.sleep(1)
         try:
             self.wait_until_interactive(aba_cfop)
@@ -453,14 +388,14 @@ class NbsRpa():
             '5405': '1407'
         }
         default_value = '2556' if estado != 'SC' else '1556'
-        cfop_results = self.get_data_from_xml(chave_acesso)
+        # cfop_results = self.get_data_from_xml(chave_acesso)
 
         grouped_by_nature = {}
         for item in cfop_results:
             cfop = item['CFOP']
             cst = item.get('CST')  # Busca CST. Se não existir, será None.
             valor_float = float(item['vProd'].replace(',', '.'))
-            if cfop == "5929" and cst in ("10", "30", "60", "70"):
+            if cfop == "5929" and cst in ("10", "30", "60", "70", "61"):
                 mapped_value = '1407'
             else:
                 mapped_value = CFOP_MAPPING.get(cfop, default_value)
@@ -578,9 +513,9 @@ class NbsRpa():
             print(str(e))
             return
         natureza_despesa.click_input()
-        time.sleep(1)
+        time.sleep(2)
         pyautogui.typewrite(natureza_financeira_value)
-        time.sleep(1)
+        time.sleep(2)
         pyautogui.press('tab')
         time.sleep(2)
         if tipo_pagamento_value == 'B':
@@ -614,16 +549,25 @@ class NbsRpa():
         if estado != 'SC':
             pyautogui.press('tab')
             pyautogui.press('enter')
+        # end_time = time.time() + 30 
+        # loop_continue = True
+        # while loop_continue and time.time() < end_time:
+        #     for elem in janela.children():
+        #         if "Aviso NF-e" in elem.window_text():
+        #             pyautogui.press("enter")
+        #             loop_continue = False
+        #             break
         time.sleep(5)
         start_time = time.time()
-        while time.time() - start_time < 30:  
-            for elem in janela.children():
-                if "Aviso NF-e" in elem.window_text():
-                    pyautogui.press("enter")
-                    break
-            time.sleep(0.5)  
-
-
+        try:
+            while time.time() - start_time < 30:  
+                for elem in janela.children():
+                    if "Aviso NF-e" in elem.window_text():
+                        pyautogui.press("enter")
+                        break
+                time.sleep(0.5)  
+        except:
+            pyautogui.press("enter")
     def execute_rpa_actions(self, mapped_value, valor):
         title = "Entrada Diversas / Operação: 52-Entrada Diversas"
         try:
@@ -827,7 +771,22 @@ class NbsRpa():
         for _ in range(2):
             pyautogui.press('enter')
             time.sleep(1)
-        time.sleep(3)
+        # time.sleep(3)
+        self.wait_microsoft_edge(num_docto, id_solicitacao)
+        # pyautogui.hotkey('ctrl', 'w')
+
+
+    def wait_microsoft_edge(self, num_docto, id_solicitacao):
+        title = f"AP_{num_docto}{id_solicitacao}.pdf - Perfil 1 — Microsoft​ Edge"
+        if not self.esperar_janela_visivel(title, timeout=60):
+            print("Falha: Janela do microsoft edge não está visível.")
+            return
+        time.sleep(2)
+        try:
+            app = Application(backend='uia').connect(title=title)
+        except ElementNotFoundError:
+            print("Não foi possível se conectar com a janela microsoft edge")
+            return 
         pyautogui.hotkey('ctrl', 'w')
 
     def click_specific_button(self, button_image_path, confidence_level=0.8):
@@ -1080,23 +1039,24 @@ class NbsRpa():
         pattern = r'(?<!\d)5102(?!\d)'
         result = re.search(pattern, text)
         return True if result else False
+
+    def get_chave_acesso_pdfplumber(self, num_docto, id_solicitacao):
+        caminho_pdf = rf"C:\Users\user\Documents\APs\nota_{num_docto}{id_solicitacao}.pdf"
+        texto_total = ""
+        with pdfplumber.open(caminho_pdf) as pdf:
+            for pagina in pdf.pages:
+                texto = pagina.extract_text()
+                if texto:
+                    texto_total += texto + '\n'
+        chave_acesso_match = re.search(r'(\d{44})', texto_total)
+        if not chave_acesso_match:
+            chave_acesso_match = re.search(r'((\d{4}\s*){10}\d{4})', texto_total)
+        chave_acesso = chave_acesso_match.group(0) if chave_acesso_match else None
+        if chave_acesso:
+            chave_acesso = ''.join(re.findall(r'\d', chave_acesso))
+        return chave_acesso
     
-    def get_chave_acesso(self, num_docto, id_solicitacao):
-        # pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
-        # caminho_pdf = rf"C:\Users\user\Documents\APs\nota_{num_docto}{id_solicitacao}.pdf"
-        # imagens = convert_from_path(caminho_pdf)
-        # texto_total = ""
-        # for imagem in imagens:
-        #     texto = pytesseract.image_to_string(imagem)
-        #     if texto:
-        #         texto_total += texto + '\n'
-        # chave_acesso_match = re.search(r'((\d{4}[\W\s]){10}\d{4})', texto_total)
-        # chave_acesso = chave_acesso_match.group(0) if chave_acesso_match else None
-        # if chave_acesso:
-        #     nao_numericos = re.findall(r'[^\d]', chave_acesso)
-        #     if nao_numericos:
-        #         chave_acesso = re.sub(r'[^\d]', '', chave_acesso)
-        # return chave_acesso
+    def get_chave_acesso_tesseract(self, num_docto, id_solicitacao):
         pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
         caminho_pdf = rf"C:\Users\user\Documents\APs\nota_{num_docto}{id_solicitacao}.pdf"
         imagens = convert_from_path(caminho_pdf)
@@ -1105,17 +1065,20 @@ class NbsRpa():
             texto = pytesseract.image_to_string(imagem)
             if texto:
                 texto_total += texto + '\n'
-        # Primeiro procuramos pelo novo padrão (44 dígitos consecutivos)
         chave_acesso_match = re.search(r'(\d{44})', texto_total)
-        # Se não encontrarmos, procuramos pelo padrão anterior
         if not chave_acesso_match:
-            chave_acesso_match = re.search(r'((\d{4}[\W\s]){10}\d{4})', texto_total)
+            chave_acesso_match = re.search(r'((\d{4}\s*){10}\d{4})', texto_total)
         chave_acesso = chave_acesso_match.group(0) if chave_acesso_match else None
         if chave_acesso:
-            nao_numericos = re.findall(r'[^\d]', chave_acesso)
-            if nao_numericos:
-                chave_acesso = re.sub(r'[^\d]', '', chave_acesso)
+            chave_acesso = ''.join(re.findall(r'\d', chave_acesso))
         return chave_acesso
+
+    def get_chave_acesso(self, num_docto, id_solicitacao):
+        chave_pdfplumber = self.get_chave_acesso_pdfplumber(num_docto, id_solicitacao)
+        if chave_pdfplumber:
+            return chave_pdfplumber
+        else:
+            return self.get_chave_acesso_tesseract(num_docto, id_solicitacao)
 
     def get_modelo(self, chave_acesso):
         return chave_acesso[20:22] if len(chave_acesso) > 21 else "Não foi possível extrair os números"
@@ -1240,8 +1203,9 @@ class NbsRpa():
         chat_ids_results = database.consultar_chat_id()
         token_result = database.consultar_token_bot()
 
-        chat_id1, chat_id2 = chat_ids_results[0][0], chat_ids_results[1][0]
-        chat_ids = [chat_id1, chat_id2]
+        # chat_id1, chat_id2 = chat_ids_results[0][0], chat_ids_results[1][0]
+        # chat_ids = [chat_id1, chat_id2]
+        chat_ids = [result[0] for result in chat_ids_results]
 
         token = token_result[0][0]
         success_msg = f"Lançamento efetuado com sucesso, id solicitacao: {id_solicitacao}, numero da nota: {numero_nota}"
@@ -1370,6 +1334,23 @@ class NbsRpa():
         
         return valor_disponivel == valor_total
 
+
+    def get_serie_from_xml(self, chave_acesso):
+        path = rf'C:\Users\user\Downloads\{chave_acesso}.xml'
+        tree = ET.parse(path)
+        root = tree.getroot()
+        ns = None
+        for elem in root.iter():
+            if '}' in elem.tag:
+                ns = {'ns': elem.tag.split('}')[0].strip('{')}
+                break
+        if ns is None:
+            raise ValueError("Namespace não encontrado no XML.")
+        
+        serie_elem = root.find('.//ns:serie', namespaces=ns)
+        serie = serie_elem.text if serie_elem is not None else None
+        
+        return serie
     
     def funcao_main(self):
         registros = database.consultar_dados_cadastro()
