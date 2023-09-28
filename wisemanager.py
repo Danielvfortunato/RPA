@@ -255,8 +255,11 @@ class Wise():
             botao_pesquisar = WebDriverWait(self.driver, 60).until(EC.element_to_be_clickable((By.XPATH, "//a[contains(@onclick, 'SearchXmlDownload')]")))
             botao_pesquisar.click()
             time.sleep(2)
-            botao_detalhes = WebDriverWait(self.driver, 60).until(EC.element_to_be_clickable((By.CLASS_NAME, "btnDetailsXml")))
-            botao_detalhes.click()
+            try:
+                botao_detalhes = WebDriverWait(self.driver, 20).until(EC.element_to_be_clickable((By.CLASS_NAME, "btnDetailsXml")))
+                botao_detalhes.click()
+            except:
+                self.fechar_aba()
             time.sleep(2)
             botao_download = WebDriverWait(self.driver, 60).until(EC.element_to_be_clickable((By.ID, "btnDownloadXmlHub")))
             botao_download.click()
