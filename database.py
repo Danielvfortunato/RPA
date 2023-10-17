@@ -32,7 +32,7 @@ def consultar_dados_cadastro():
                 , nf.naturezafinanceira
                 , numeroparcelas
                 , autorizarpa 
-                , sg.numeroOs
+                , REGEXP_REPLACE(sg.numeroOs, '[^\d]', '', 'g') AS numeroOs
                 , cl.terceiro
                 , cl.estado
                 , sg.usarateiocentrocusto 
@@ -40,6 +40,7 @@ def consultar_dados_cadastro():
                 , sg.idrateiocc 
                 , sg.historico
                 , ep.id
+                , cl.cidade
             FROM 
                 solicitacaoGasto sg
                 , cliente cl
@@ -244,7 +245,7 @@ def consultar_chat_id():
             from 
                 usuario 
             where 
-                login in ('rpa', 'Daniel')
+                login in ('rpa', 'Daniel', 'Pamela')
         """
         cursor.execute(query)
         resultados = cursor.fetchall()
