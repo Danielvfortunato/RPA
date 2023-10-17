@@ -17,6 +17,8 @@ import math
 import send_mail
 from decimal import Decimal, ROUND_DOWN
 import os
+import nlp3
+import pyperclip
 
 class NbsRpa():
     
@@ -179,7 +181,7 @@ class NbsRpa():
         time.sleep(1)
         pyautogui.press('n')
 
-    def janela_entrada(self):
+    def janela_entrada(self, tipo_docto_value):
         title = "Entradas"
         if not self.esperar_janela_visivel(title, timeout=60):
             print("Falha: Janela de entradas não está visível.")
@@ -192,13 +194,15 @@ class NbsRpa():
             return 
         janela = app[title]
         janela.set_focus()
-        # time.sleep(2)
-        # button_image_path = r"C:\Users\user\Documents\RPA_Project\imagens\Inserir_Nota.PNG"
-        # self.click_specific_button(button_image_path)
-        time.sleep(1)
-        button_image_path = r"C:\Users\user\Documents\RPA_Project\imagens\nfe.PNG"
-        time.sleep(1)
-        self.click_specific_button(button_image_path)
+        time.sleep(2)
+        if tipo_docto_value == 'NFS':
+            button_image_path = r"C:\Users\user\Documents\RPA_Project\imagens\Inserir_Nota.PNG"
+            time.sleep(1)
+            self.click_specific_button(button_image_path)
+        elif tipo_docto_value == 'NFE':
+            button_image_path = r"C:\Users\user\Documents\RPA_Project\imagens\nfe.PNG"
+            time.sleep(1)
+            self.click_specific_button(button_image_path)
 
     def importar_xml(self):
         title = "Arquivos NFe: Interface de compra"
@@ -247,12 +251,12 @@ class NbsRpa():
         aceitar = r"C:\Users\user\Documents\RPA_Project\imagens\aceitar.PNG"
         self.click_specific_button(aceitar)
 
-    def janela_cadastro_nf(self, cpf_cnpj_value, num_nf_value, serie_value, data_emissao_value, tipo_docto_value, valor_value, contab_descricao_value, total_parcelas_value, tipo_pagamento_value, natureza_financeira_value, numeroos, terceiro, estado, usa_rateio_centro_custo, valor_sg, rateios, rateios_aut, inss, irff, piscofinscsl, iss, vencimento_value, obs, codigo_contab, boletos, num_parcelas, id_solicitacao, chave_acesso):
+    def janela_cadastro_nf(self, cpf_cnpj_value, num_nf_value, serie_value, data_emissao_value, tipo_docto_value, valor_value, contab_descricao_value, total_parcelas_value, tipo_pagamento_value, natureza_financeira_value, numeroos, terceiro, estado, usa_rateio_centro_custo, valor_sg, rateios, rateios_aut, inss, irff, piscofinscsl, iss, vencimento_value, obs, codigo_contab, boletos, num_parcelas, id_solicitacao, chave_acesso, cod_matriz, cidade_cliente, empresa):
         title = "Entrada Diversas / Operação: 52-Entrada Diversas"
         if not self.esperar_janela_visivel(title, timeout=60):
             print("Falha: Janela de cadastro_nf não está visível.")
             return
-        time.sleep(2)
+        time.sleep(5)
         try:
             app = Application(backend='uia').connect(title=title)
         except ElementNotFoundError:
@@ -284,18 +288,123 @@ class NbsRpa():
         aba_cfop = janela.child_window(title='CFOP´s', control_type='TabItem')
         nota_ext = janela.child_window(title="Nota Extemporânea") 
         regime_norma = janela.child_window(title='Docto Fiscal emitido com base em Regime Esp. ou Norma Específica')
+        vlr_iss = janela.child_window(class_name="TOvcDbPictureField", found_index=15)
+        fisco_municipal = janela.child_window(title='Fisco Municipal')
+        aliquota_field = janela.child_window(class_name='TOvcDbPictureField', found_index=14)
         # Set Comands
-        # cpf_cnpj.type_keys(cpf_cnpj_value)
-        # cpf_cnpj.type_keys("{ENTER}")
-        # esp.click_input()
-        # esp.type_keys(tipo_docto_value)
-        # num_nf.type_keys(num_nf_value)
-        # serie = self.get_serie(num_nf_value, id_solicitacao)
-        # sr.type_keys(serie_value)
-        # sr.type_keys(serie)
-        # data_emissao.type_keys(data_emissao_value)
-        # vlr_nf.type_keys(valor_value)
-        # time.sleep(1)
+        if tipo_docto_value == 'NFS':
+            try:
+                self.wait_until_interactive(cpf_cnpj)
+            except TimeoutError as e:
+                print(str(e))
+                return
+            cpf_cnpj.type_keys(cpf_cnpj_value)
+            cpf_cnpj.type_keys("{ENTER}")
+            try:
+                self.wait_until_interactive(esp)
+            except TimeoutError as e:
+                print(str(e))
+                return
+            esp.click_input()
+            esp.type_keys(tipo_docto_value)
+            try:
+                self.wait_until_interactive(num_nf)
+            except TimeoutError as e:
+                print(str(e))
+                return
+            num_nf.click_input()
+            time.sleep(1)
+            num_nf.type_keys(num_nf_value)
+            try:
+                self.wait_until_interactive(sr)
+            except TimeoutError as e:
+                print(str(e))
+                return
+            # serie = self.get_serie(num_nf_value, id_solicitacao)
+            sr.type_keys(serie_value)
+            # sr.type_keys(serie)
+            try:
+                self.wait_until_interactive(data_emissao)
+            except TimeoutError as e:
+                print(str(e))
+                return
+            data_emissao.type_keys(data_emissao_value)
+            try:
+                self.wait_until_interactive(vlr_iss)
+            except TimeoutError as e:
+                print(str(e))
+                return
+            vlr_iss.type_keys(valor_value)
+            aliquota = self.get_aliquota(num_nf_value, id_solicitacao)
+            aliquota_img = self.extract_aliquota_from_image(num_nf_value, id_solicitacao)
+            time.sleep(3)
+            try:
+                self.wait_until_interactive(aliquota_field)
+            except TimeoutError as e:
+                print(str(e))
+                return
+            time.sleep(1)
+            aliquota_field.click_input()
+            time.sleep(1)
+            if aliquota != '0,00' and aliquota is not None:
+                time.sleep(1)
+                pyautogui.doubleClick()
+                time.sleep(1)
+                pyautogui.press('backspace')
+                time.sleep(1)
+                pyautogui.typewrite(aliquota)
+            elif aliquota is None and aliquota_img is not None:
+                time.sleep(1)
+                pyautogui.doubleClick()
+                time.sleep(1)
+                pyautogui.press('backspace')
+                time.sleep(1)
+                pyautogui.typewrite(aliquota_img)
+                time.sleep(1)
+            for _ in range(3):
+                pyautogui.press('tab')
+                time.sleep(1)
+            cod_servico = self.get_service_code(num_nf_value, id_solicitacao)
+            cod_servico_img = self.extract_service_code_from_image(num_nf_value, id_solicitacao)
+            time.sleep(2)
+            if cod_servico is not None:
+                pyautogui.typewrite(cod_servico)
+            elif cod_servico is None and cod_servico_img is not None:
+                pyautogui.typewrite(cod_servico_img)
+            else:
+                cod_servico_nlp = nlp3.refine_best_match_code(num_nf_value, id_solicitacao)
+                pyautogui.typewrite(cod_servico_nlp)
+            try:
+                self.wait_until_interactive(vlr_nf)
+            except TimeoutError as e:
+                print(str(e))
+                return
+            vlr_nf.type_keys(valor_value)
+            time.sleep(1)
+            fisco_municipal.click_input()
+            for _ in range(3):
+                pyautogui.press('tab')
+                time.sleep(0.5)
+            time.sleep(1)
+            pyautogui.typewrite(obs)
+            time.sleep(1)
+            try:
+                self.wait_until_interactive(nota_ext)
+            except TimeoutError as e:
+                print(str(e))
+                return
+            mes_data_emissao = int(data_emissao_value[2:4])
+            mes_atual = datetime.datetime.now().month
+            if mes_data_emissao != mes_atual:
+                nota_ext.click_input()
+            time.sleep(2) 
+            # try:
+            #     self.wait_until_interactive(fisco_municipal)
+            # except TimeoutError as e:
+            #     print(str(e))
+            #     return
+            # fisco_municipal.click_input()
+
         # if inss is not None or irff is not None or piscofinscsl is not None or iss is not None:
         #     if inss > 0 or irff > 0 or piscofinscsl > 0 or iss > 0:
         #         detalhe_nota = janela.child_window(title="Valores da Nota", class_name="TTabSheet")
@@ -311,35 +420,44 @@ class NbsRpa():
         #         time.sleep(3)
         #         self.calculo_tributos(inss, irff, piscofinscsl, iss, valor_value)
         time.sleep(1)
-        try:
-            self.wait_until_interactive(observacao)
-        except TimeoutError as e:
-            print(str(e))
-            return
-        observacao.click_input()
-        time.sleep(1)
-        pyautogui.typewrite(obs)
-        time.sleep(1)
-        try:
-            self.wait_until_interactive(nota_ext)
-        except TimeoutError as e:
-            print(str(e))
-            return
-        data_emissao_xml_value = self.get_data_emissao_from_xml(chave_acesso)
-        mes_xml = int(data_emissao_xml_value.split('-')[1])
-        mes_atual = datetime.datetime.now().month
-        if mes_xml != mes_atual:
-            nota_ext.click_input()
-        time.sleep(2)
 
-        cfop_results = self.get_data_from_xml(chave_acesso)
-        time.sleep(1)
-        numero_serie = self.get_serie_from_xml(chave_acesso)
-        has_cfop_starting_with_59 = any(item['CFOP'].startswith("59") for item in cfop_results)
+        if tipo_docto_value == 'NFE':
+            try:
+                self.wait_until_interactive(observacao)
+            except TimeoutError as e:
+                print(str(e))
+                return
+            observacao.click_input()
+            time.sleep(1)
+            pyautogui.typewrite(obs)
+            time.sleep(1)
+            try:
+                self.wait_until_interactive(nota_ext)
+            except TimeoutError as e:
+                print(str(e))
+                return
+            if tipo_docto_value == 'NFE':
+                data_emissao_xml_value = self.get_data_emissao_from_xml(chave_acesso)
+                mes_xml = int(data_emissao_xml_value.split('-')[1])
+                mes_atual = datetime.datetime.now().month
+                if mes_xml != mes_atual:
+                    nota_ext.click_input()
+                time.sleep(2)
+            # elif tipo_docto_value == 'NFS':
+            #     mes_data_emissao = int(data_emissao_value[2:4])
+            #     mes_atual = datetime.datetime.now().month
+            #     if mes_data_emissao != mes_atual:
+            #         nota_ext.click_input()
+            #     time.sleep(2)                
 
-        if numero_serie in ('890', '891','892','893','894','895','896','897','898','899') or has_cfop_starting_with_59:
-            regime_norma.click_input()
-        time.sleep(2)
+            cfop_results = self.get_data_from_xml(chave_acesso)
+            time.sleep(1)
+            numero_serie = self.get_serie_from_xml(chave_acesso)
+            has_cfop_starting_with_59 = any(item['CFOP'].startswith("59") for item in cfop_results)
+
+            if numero_serie in ('890', '891','892','893','894','895','896','897','898','899') or has_cfop_starting_with_59:
+                regime_norma.click_input()
+            time.sleep(2)
 
         natureza_financeira_list = ['ALUGUEIS A PAGAR', 'COMBUSTÍVEIS/ LUBRIFICANTES', 'CUSTO COMBUSTIVEL NOVOS', 'CUSTO DESPACHANTE NOVOS', 'CUSTO FRETE NOVOS', 'CUSTO NOVOS', 'CUSTO OFICINA', 'DESP DESPACHANTE NOVOS', 'DESP FRETE VEIC NOVOS', 'DESP. COM SERVICOS DE OFICINA', 'DESPESA COM LAVACAO', 'DESPESA OFICINA', 'ENERGIA ELETRICA', 'FRETE', 'HONORARIO PESSOA JURIDICA', 'INFORMATICA HARDWARE', 'INFORMATICA SOFTWARE', 'INTERNET', 'MANUT. E CONSERV. DE', 'MATERIAL DE OFICINA DESPESA', 'PONTO ELETRONICO RA', 'SALARIO ERIBERTO', 'SALARIO MAGU', 'SALARIO VIVIANE', 'SALARIOS RA', 'SERVICO DE TERCEIROS FUNILARIA', 'SERVICOS DE TERCEIRO OFICINA', 'SOFTWARE', 'VALE TRANSPORTE RA', 'VD SALARIO', 'VD VEICULOS NOVOS', 'VIAGENS E ESTADIAS', 'AÇÕES EXTERNAS', 'AÇÕES LOJA', 'ADESIVOS', 'AGENCIA', 'BRINDES E CORTESIAS', 'DECORAÇÃO', 'DESENSOLVIMENTO SITE', 'DESP MKT CHERY FLORIPA', 'DISPARO SMS/WHATS', 'EVENTOS', 'EXPOSITORES', 'FACEBOOK', 'FACEBOOK/INSTAGRAM', 'FEE MENSAL', 'FEIRA/EVENTOS', 'FEIRAO', 'FOLLOWISE (MKT)', 'GOOGLE', 'INFLUENCIADORES', 'INSTITUCIONAL', 'INTEGRADOR (MKT)', 'JORNAL', 'LANCAMENTOS', 'LED', 'MARKETING', 'MERCADO LIVRE', 'MIDIA ON OUTROS', 'MIDIA/ONLINE', 'MKT', 'OUTDOOR', 'PANFLETOS', 'PATROCINIO', 'PORTAL GERACAO', 'PROSPECÇÃO', 'PUBLICIDADE E PROPAGANDA', 'RADIO', 'RD (MKT)', 'REGISTRO SITE', 'SISTEMAS (MKT)', 'SYONET AUTOMOVEIS', 'TELEVISAO', 'VENDAS EXTERNAS', 'VIDEOS', 'VITRINE', 'WISE (MKT)']
         if not all(r[0] == "2" for r in rateios) or not all(r[0] == "2" for r in rateios_aut):
@@ -361,60 +479,99 @@ class NbsRpa():
                     return
                 tab_natureza_credito.click_input()
                 time.sleep(1)
-                nat_text = janela.child_window(class_name='TwwDBLookupCombo', found_index=1)
-                try:
-                    self.wait_until_interactive(nat_text)
-                except TimeoutError as e:
-                    print(str(e))
-                    return
-                nat_text.click_input()
-                time.sleep(1)
-                pyautogui.typewrite('Aquisicao de bens utilizados como insumo')
-                time.sleep(2)
-                pyautogui.press('tab')
-        time.sleep(1)
-        try:
-            self.wait_until_interactive(aba_cfop)
-        except TimeoutError as e:
-            print(str(e))
-            return
-        aba_cfop.click_input()
-        time.sleep(2)
-        CFOP_MAPPING = {
-            '5102': '1556',
-            '6102': '2556',
-            '5403': '1407',
-            '5656': '1407',
-            '5405': '1407'
-        }
-        default_value = '2556' if estado != 'SC' else '1556'
-        # cfop_results = self.get_data_from_xml(chave_acesso)
-
-        grouped_by_nature = {}
-        for item in cfop_results:
-            cfop = item['CFOP']
-            cst = item.get('CST')  # Busca CST. Se não existir, será None.
-            valor_float = float(item['vProd'].replace(',', '.'))
-            if cfop == "5929" and cst in ("10", "30", "60", "70", "61"):
-                mapped_value = '1407'
+                if tipo_docto_value == 'NFE':
+                    nat_text_nfe = janela.child_window(class_name='TwwDBLookupCombo', found_index=1)
+                    try:
+                        self.wait_until_interactive(nat_text_nfe)
+                    except TimeoutError as e:
+                        print(str(e))
+                        return
+                    nat_text_nfe.click_input()
+                    time.sleep(1)
+                    pyautogui.typewrite('Aquisicao de bens utilizados como insumo')
+                    time.sleep(2)
+                    pyautogui.press('tab')
+                elif tipo_docto_value == 'NFS':
+                    nat_text_nfs = janela.child_window(class_name='TwwDBLookupCombo', found_index=0)
+                    try:
+                        self.wait_until_interactive(nat_text_nfs)
+                    except TimeoutError as e:
+                        print(str(e))
+                        return
+                    nat_text_nfs.click_input()
+                    time.sleep(1)
+                    pyautogui.typewrite('Aquisicao de servicos utilizados como insumo')
+                    time.sleep(2)
+                    pyautogui.press('tab')
+        if tipo_docto_value == 'NFS':
+            time.sleep(2)
+            modelo_fiscal = janela.child_window(title='Modelo Fiscal / Chave e Outros')
+            chave_nfse_value = self.get_codigo_from_pdf(num_nf_value, id_solicitacao)
+            chave_nfse_sp_tesseract = self.get_codigo_from_pdf(num_nf_value, id_solicitacao)
+            try:
+                self.wait_until_interactive(modelo_fiscal)
+            except TimeoutError as e:
+                print(str(e))
+                return
+            modelo_fiscal.click_input()
+            time.sleep(2)
+            botao_nfe = janela.child_window(title='NF-e')
+            for _ in range(2):
+                botao_nfe.click_input()
+                time.sleep(0.5)
+            for _ in range(2):
+                pyautogui.press("tab")
+                time.sleep(0.5)
+            time.sleep(2)
+            if chave_nfse_value is not None:
+                pyautogui.typewrite(chave_nfse_value)
             else:
-                mapped_value = CFOP_MAPPING.get(cfop, default_value)
-            if mapped_value in grouped_by_nature:
-                grouped_by_nature[mapped_value] += valor_float
-            else:
-                grouped_by_nature[mapped_value] = valor_float
-        valor_total_decimal = Decimal(valor_value.replace(',', '.'))
-        grouped_by_decimal = {k: Decimal(v).quantize(Decimal('0.01')) for k, v in grouped_by_nature.items()}
-        valor_already_added = Decimal(0)
-        for idx, (mapped_value, total) in enumerate(grouped_by_decimal.items()):
-            if idx != len(grouped_by_decimal) - 1:
-                valor = total.quantize(Decimal('0.01'))
-                valor_already_added += valor
-            else:  # Se for o último item, ajuste para o total da nota
-                valor = valor_total_decimal - valor_already_added
+                pyautogui.typewrite(chave_nfse_sp_tesseract)
 
-            valor_str = str(valor).replace('.', ',')
-            self.execute_rpa_actions(mapped_value, valor_str)
+        time.sleep(3)
+        if tipo_docto_value == 'NFE':
+            try:
+                self.wait_until_interactive(aba_cfop)
+            except TimeoutError as e:
+                print(str(e))
+                return
+            aba_cfop.click_input()
+            time.sleep(2)
+            CFOP_MAPPING = {
+                '5102': '1556',
+                '6102': '2556',
+                '5403': '1407',
+                '5656': '1407',
+                '5405': '1407'
+            }
+            default_value = '2556' if estado != 'SC' else '1556'
+            # cfop_results = self.get_data_from_xml(chave_acesso)
+
+            grouped_by_nature = {}
+            for item in cfop_results:
+                cfop = item['CFOP']
+                cst = item.get('CST')  # Busca CST. Se não existir, será None.
+                valor_float = float(item['vProd'].replace(',', '.'))
+                if cfop == "5929" and cst in ("10", "30", "60", "70", "61"):
+                    mapped_value = '1407'
+                else:
+                    mapped_value = CFOP_MAPPING.get(cfop, default_value)
+                if mapped_value in grouped_by_nature:
+                    grouped_by_nature[mapped_value] += valor_float
+                else:
+                    grouped_by_nature[mapped_value] = valor_float
+            valor_total_decimal = Decimal(valor_value.replace(',', '.'))
+            grouped_by_decimal = {k: Decimal(v).quantize(Decimal('0.01')) for k, v in grouped_by_nature.items()}
+            valor_already_added = Decimal(0)
+            for idx, (mapped_value, total) in enumerate(grouped_by_decimal.items()):
+                if idx != len(grouped_by_decimal) - 1:
+                    valor = total.quantize(Decimal('0.01'))
+                    valor_already_added += valor
+                else:  # Se for o último item, ajuste para o total da nota
+                    valor = valor_total_decimal - valor_already_added
+
+                valor_str = str(valor).replace('.', ',')
+                self.execute_rpa_actions(mapped_value, valor_str)
 
         ##### se for nota fiscal de produto
         try:
@@ -469,7 +626,8 @@ class NbsRpa():
         time.sleep(2)
         compare_values = self.compare_values_rateio()
         if compare_values == False:
-            self.click_specific_button(raio)
+            total_disponivel = self.get_total_disponivel()
+            self.inserir_rateio(rateios, conta_contabil, valor_sg, valor_value, usa_rateio_centro_custo, rateios_aut, total_disponivel)
         else:
             self.inserir_rateio(rateios, conta_contabil, valor_sg, valor_value, usa_rateio_centro_custo, rateios_aut)
         time.sleep(2)
@@ -544,6 +702,62 @@ class NbsRpa():
         if terceiro == 'S':
             self.janela_se_terceiro(numeroos)
         time.sleep(2)
+        try:
+            if tipo_docto_value == 'NFS' and cod_matriz == '31':
+                
+                prefeitura = janela.child_window(title='Prefeitura')
+                try:
+                    self.wait_until_interactive(prefeitura)
+                except TimeoutError as e:
+                    print(str(e))
+                    return
+                prefeitura.click_input()
+                
+                time.sleep(1)
+                cnae = janela.child_window(class_name="TBtnWinControl", found_index=2)
+                try:
+                    self.wait_until_interactive(cnae)
+                except TimeoutError as e:
+                    print(str(e))
+                    return
+                cnae.click_input()
+                time.sleep(1)
+                pyautogui.typewrite('Tributado integralmente')
+                time.sleep(1)
+                pyautogui.press('enter')
+
+                cfps = janela.child_window(class_name="TBtnWinControl", found_index=1)
+                try:
+                    self.wait_until_interactive(cfps)
+                except TimeoutError as e:
+                    print(str(e))
+                    return
+                cfps.click_input()
+                time.sleep(2)
+                cidade_empresa = self.consulta_cidade_empresa(empresa)
+                if cidade_empresa == cidade_cliente:
+                    pyautogui.typewrite('Para Tomador ou destinario estabelecido ou domiciliado no municipio')
+                elif cidade_empresa != cidade_cliente and estado == 'SC':
+                    pyautogui.typewrite('Para Tomador ou destinario estabelecido ou domiciliado fora do municipio')
+                elif estado != 'SC':
+                    pyautogui.typewrite('Para Tomador ou destinario estabelecido ou domiciliado em outro estado da Federacao')
+                time.sleep(2)
+                pyautogui.press('enter')
+                time.sleep(1)
+                cst = janela.child_window(class_name="TBtnWinControl", found_index=0)
+                try:
+                    self.wait_until_interactive(cst)
+                except TimeoutError as e:
+                    print(str(e))
+                    return
+                cst.click_input()
+                time.sleep(1)
+                pyautogui.typewrite('Tributado integralmente')
+                time.sleep(1)
+                pyautogui.press('enter')
+        except:
+            pass
+
         submit_button.click_input()
         time.sleep(2)
         if estado != 'SC':
@@ -789,15 +1003,28 @@ class NbsRpa():
             return 
         pyautogui.hotkey('ctrl', 'w')
 
-    def click_specific_button(self, button_image_path, confidence_level=0.8):
-        button_location = pyautogui.locateOnScreen(button_image_path, confidence=confidence_level)
-        if button_location:
-            button_x, button_y, button_width, button_height = button_location
-            button_center_x = button_x + button_width // 2
-            button_center_y = button_y + button_height // 2
-            pyautogui.click(button_center_x, button_center_y)
-            print("Botão clicado!")
-        else:
+    def click_specific_button(self, button_image_path, confidence_level=0.8, timeout=10):
+        # button_location = pyautogui.locateOnScreen(button_image_path, confidence=confidence_level)
+        # if button_location:
+        #     button_x, button_y, button_width, button_height = button_location
+        #     button_center_x = button_x + button_width // 2
+        #     button_center_y = button_y + button_height // 2
+        #     pyautogui.click(button_center_x, button_center_y)
+        #     print("Botão clicado!")
+        # else:
+        #     print("Botão não encontrado.")
+            end_time = time.time() + timeout
+            while time.time() < end_time:
+                button_location = pyautogui.locateOnScreen(button_image_path, confidence=confidence_level)
+                if button_location:
+                    button_x, button_y, button_width, button_height = button_location
+                    button_center_x = button_x + button_width // 2
+                    button_center_y = button_y + button_height // 2
+                    pyautogui.click(button_center_x, button_center_y)
+                    print("Botão clicado!")
+                    return
+                time.sleep(1)  # Espera um segundo antes de tentar novamente
+            
             print("Botão não encontrado.")
 
     def close_extract_pdf_window(self):
@@ -884,7 +1111,7 @@ class NbsRpa():
             return
         fechar.click_input()
    
-    def inserir_rateio(self, rateios, conta_contabil, valor_sg, vlr_nf, usa_rateio_centro_custo, rateios_aut):
+    def inserir_rateio(self, rateios, conta_contabil, valor_sg, vlr_nf, usa_rateio_centro_custo, rateios_aut, total_disponivel=None):
         incluir = r"C:\Users\user\Documents\RPA_Project\imagens\Incluir.PNG"
         self.click_specific_button(incluir)
         time.sleep(2)
@@ -915,7 +1142,8 @@ class NbsRpa():
                 time.sleep(1)
                 historico_padrao.click_input()
                 pyautogui.typewrite("85")
-                vlr_rateio = self.get_valor_rateio_manual(rateio[1], valor_sg, vlr_nf)
+                # vlr_rateio = self.get_valor_rateio_manual(rateio[1], valor_sg, vlr_nf)
+                vlr_rateio = self.get_valor_rateio_manual(rateio[1], valor_sg, vlr_nf, total_disponivel)
                 if indice != tamanho_manual - 1:
                     valor_rateio.type_keys(vlr_rateio)
                 time.sleep(1)
@@ -934,28 +1162,45 @@ class NbsRpa():
                 time.sleep(1)
                 historico_padrao.click_input()
                 pyautogui.typewrite("85")
-                vlr_rateio = self.get_valor_rateio_aut(vlr_nf, rateio_aut[1])
+                # vlr_rateio = self.get_valor_rateio_aut(vlr_nf, rateio_aut[1])
+                vlr_rateio = self.get_valor_rateio_aut(vlr_nf, rateio_aut[1], total_disponivel)
                 if indice != tamanho_aut - 1:
                     valor_rateio.type_keys(vlr_rateio)
                 time.sleep(1)
                 confirmar.click_input()
                 time.sleep(1)
 
-    def get_valor_rateio_manual(self, valor_centro_custo, total_sg, valor_nf):
-        valor_nf = valor_nf.replace(',', '.')
-        valor_nf = float(valor_nf) if valor_nf else 0.0  
+    def get_valor_rateio_manual(self, valor_centro_custo, total_sg, valor_nf, total_disponivel=None):
+        # valor_nf = valor_nf.replace(',', '.')
+        # valor_nf = float(valor_nf) if valor_nf else 0.0  
+        # proporcao_centro_custo = valor_centro_custo / total_sg
+        # valor_rateio = proporcao_centro_custo * valor_nf
+        # valor_rateio_str = "{:.2f}".format(valor_rateio)
+        # valor_rateio_str = valor_rateio_str.lstrip('0')
+        # return valor_rateio_str.replace('.', ',')
+        valor_base = total_disponivel if total_disponivel else valor_nf
+        valor_base = valor_base.replace(',', '.')
+        valor_base = float(valor_base) if valor_base else 0.0  
         proporcao_centro_custo = valor_centro_custo / total_sg
-        valor_rateio = proporcao_centro_custo * valor_nf
+        valor_rateio = proporcao_centro_custo * valor_base
         valor_rateio_str = "{:.2f}".format(valor_rateio)
         valor_rateio_str = valor_rateio_str.lstrip('0')
         return valor_rateio_str.replace('.', ',')
 
 
-    def get_valor_rateio_aut(self, valor_nf, porcentagem):
-        valor_nf = valor_nf.replace(',', '.')
-        valor_nf = float(valor_nf) if valor_nf else 0.0  
+    def get_valor_rateio_aut(self, valor_nf, porcentagem, total_disponivel=None):
+        # valor_nf = valor_nf.replace(',', '.')
+        # valor_nf = float(valor_nf) if valor_nf else 0.0  
+        # porcentagem_decimal = float(porcentagem) / 100
+        # valor_rateio = porcentagem_decimal * valor_nf
+        # valor_rateio_str = "{:.2f}".format(valor_rateio)
+        # valor_rateio_str = valor_rateio_str.lstrip('0')
+        # return valor_rateio_str.replace('.', ',')
+        valor_base = total_disponivel if total_disponivel else valor_nf
+        valor_base = valor_base.replace(',', '.')
+        valor_base = float(valor_base) if valor_base else 0.0  
         porcentagem_decimal = float(porcentagem) / 100
-        valor_rateio = porcentagem_decimal * valor_nf
+        valor_rateio = porcentagem_decimal * valor_base
         valor_rateio_str = "{:.2f}".format(valor_rateio)
         valor_rateio_str = valor_rateio_str.lstrip('0')
         return valor_rateio_str.replace('.', ',')
@@ -1061,16 +1306,20 @@ class NbsRpa():
         caminho_pdf = rf"C:\Users\user\Documents\APs\nota_{num_docto}{id_solicitacao}.pdf"
         imagens = convert_from_path(caminho_pdf)
         texto_total = ""
+        
         for imagem in imagens:
             texto = pytesseract.image_to_string(imagem)
             if texto:
                 texto_total += texto + '\n'
+        
         chave_acesso_match = re.search(r'(\d{44})', texto_total)
         if not chave_acesso_match:
             chave_acesso_match = re.search(r'((\d{4}\s*){10}\d{4})', texto_total)
         chave_acesso = chave_acesso_match.group(0) if chave_acesso_match else None
+        
         if chave_acesso:
             chave_acesso = ''.join(re.findall(r'\d', chave_acesso))
+        
         return chave_acesso
 
     def get_chave_acesso(self, num_docto, id_solicitacao):
@@ -1124,13 +1373,17 @@ class NbsRpa():
         year = int(str_num[4:])
         return datetime.date(year, month, day) 
         
-    def check_conditions(self, tipo_docto, chave_acesso, serie, natureza, vencimento, inss, irff, piscofinscsl, tipo_pagamento, icms, boletos):
+    def check_conditions(self, tipo_docto, chave_acesso, serie, natureza, vencimento, inss, irff, piscofinscsl, tipo_pagamento, icms, boletos, cod_nfse):
         current_date = datetime.date.today()
         converted_vencimento = self.convert_to_date(vencimento)
         # if tipo_docto != "NFE":
         #     return False, "Tipo de documento inválido"
-        if not chave_acesso:
-            return False, "chave de acesso não encontrada"
+        if tipo_docto == 'NFE':
+            if not chave_acesso:
+                return False, "chave de acesso de produto não encontrada"
+        if tipo_docto == 'NFS':
+            if not cod_nfse:
+                return False, "chave de acesso de servico não encontrada"
         # if not serie:
         #     return False, "serie não encontrada"
         # if not icms or icms == 0.0:
@@ -1199,7 +1452,7 @@ class NbsRpa():
             else:
                 print(f"Traceback message sent successfully to chat_id {chat_id} on Telegram!")
 
-    def send_success_message(self, id_solicitacao, numero_nota):
+    def send_success_message(self, id_solicitacao, numero_nota, tipo_nota):
         chat_ids_results = database.consultar_chat_id()
         token_result = database.consultar_token_bot()
 
@@ -1208,7 +1461,7 @@ class NbsRpa():
         chat_ids = [result[0] for result in chat_ids_results]
 
         token = token_result[0][0]
-        success_msg = f"Lançamento efetuado com sucesso, id solicitacao: {id_solicitacao}, numero da nota: {numero_nota}"
+        success_msg = f"Lançamento efetuado com sucesso, id solicitacao: {id_solicitacao}, numero da nota: {numero_nota}, tipo da nota: {tipo_nota}"
         
         base_url = f"https://api.telegram.org/bot{token}/sendMessage"
 
@@ -1351,7 +1604,286 @@ class NbsRpa():
         serie = serie_elem.text if serie_elem is not None else None
         
         return serie
+
+    def get_codigo_from_pdf(self, num_docto, id_solicitacao):
+        texto_total = self.extract_text_from_pdf_with_pdfplumber(num_docto, id_solicitacao)   
+        # caminho_pdf = rf"C:\Users\user\Documents\APs\nota_{num_docto}{id_solicitacao}.pdf"
+        
+        # texto_total = ""
+        # with pdfplumber.open(caminho_pdf) as pdf:
+        #     for pagina in pdf.pages:
+        #         texto = pagina.extract_text()
+        #         if texto:
+        #             texto_total += texto + '\n'
+                    # print(texto_total)
+
+        codigos_pattern1 = r'(?i)(Código\s*de\s*Verificação|Código\s*de\s*Validação|Autenticidade|Chave\s*Acesso|Chave\s*de\s*Acesso|Chave\s*de\s*Acesso\s*daNFS-e)[^A-Z0-9]*?\b((?=[A-Z]{8,})[A-Z]{8,}|(?=.*[0-9])(?=.*[A-Z])[A-Z0-9]{8,}|\b\d{8,}\b)\b'
+
+        codigo_match1 = re.search(codigos_pattern1, texto_total)
+        codigo1 = codigo_match1.group(2) if codigo_match1 else None
+
+        if not codigo1:
+            # 3. Termos maiúsculos que contêm letras e números na mesma string.
+            codigos_pattern2 = r'(?i)(?:Código\s*de\s*Verificação|Código\s*de\s*Validação|Autenticidade|Chave\s*Acesso|Chave\s*de\s*Acesso|Chave\s*de\s*Acesso\s*daNFS-e)[\s\S]*?\b([A-Z0-9]*[A-Z][A-Z0-9]*[0-9][A-Z0-9]*|[A-Z0-9]*[0-9][A-Z0-9]*[A-Z][A-Z0-9]*)\b'
+            codigo_match2 = re.search(codigos_pattern2, texto_total)
+            codigo2 = codigo_match2.group(1) if codigo_match2 else None
+            return codigo2
+
+        return codigo1
     
+    def get_service_code(self, num_docto, id_solicitacao):
+        texto_total = self.extract_text_from_pdf_with_pdfplumber(num_docto, id_solicitacao)   
+        # caminho_pdf = rf"C:\Users\user\Documents\APs\nota_{num_docto}{id_solicitacao}.pdf"
+        
+        # texto_total = ""
+        # try:
+        #     with pdfplumber.open(caminho_pdf) as pdf:
+        #         for pagina in pdf.pages:
+        #             texto = pagina.extract_text()
+        #             if texto:
+        #                 texto_total += texto + '\n'
+        #                 # print(texto_total)
+        # except Exception as e:
+        #     print(f"Erro ao ler o PDF: {e}")
+        #     return None
+        
+        # pattern = r'(c[oó]dig(?:o|os)?\s*(?:de|dos)?\s*servi[cç][oó]s|atividade\s*do\s*munic[ií]pio|c[oó]digo\s*de\s*tributa[cç][aã]o\s*nacional)[^\d]*(\d{1,2}\.\d{1,2}\.\d{1,2})'
+        # pattern = r'(c[oó]dig(?:o|os)?\s*(?:de|dos)?\s*servi[cç][oó]s|atividade\s*do\s*munic[ií]pio|c[oó]digo\s*de\s*tributa[cç][aã]o\s*nacional)[^0-9]*(\d{1,2}\.\d{1,2}\.\d{1,2})'
+        pattern = r'(c[oó]dig(?:o|os)?\s*(?:de|dos)?\s*servi[cç][oó]s|atividade\s*do\s*munic[ií]pio|c[oó]digo\s*de\s*tributa[cç][aã]o\s*nacional)\s*[^0-9]*\s*(\d{1,2}\.\d{1,2}(?:\.\d{1,2})?)'
+        
+        match = re.search(pattern, texto_total, re.IGNORECASE)
+        
+        if match:
+            code = match.group(2).replace('.', '')
+            return code[:4]
+
+        return None
+    
+    def consulta_cidade_empresa(self, empresa: str) -> str:
+        city_map = {
+            "FLORIPA": "FLORIANOPOLIS",
+            "TUBARAO": "TUBARAO",
+            "LAGES": "LAGES",
+            "CRICIUMA": "CRICIUMA",
+        }
+
+        city = empresa.split()[-1].upper()
+        return city_map.get(city, city)
+
+    def get_aliquota(self, num_docto, id_solicitacao):
+        texto_total = self.extract_text_from_pdf_with_pdfplumber(num_docto, id_solicitacao) 
+        aliquota_value = None
+        # Lages
+        # Tentativa 1: Após "Base de cálculo (%)", pegue o número após o 'x'
+        try:
+            pattern1 = r'Base de cálculo \(%\).*?\d+(?:,\d{1,2})?x(\d+(?:,\d{1,2})?)='
+            match = re.search(pattern1, texto_total, re.IGNORECASE | re.DOTALL)
+            if match:
+                aliquota_value = match.group(1)
+        except:
+            pass
+
+        # Criciuma
+        # Tentativa 2: Após "Alíquota ISS", pegue o primeiro valor com % e retorne as duas primeiras casas após a vírgula
+        if not aliquota_value:
+            try:
+                pattern2 = r'Alíquota ISS.*?(\d+,\d{1,4})\s?%'
+                match = re.search(pattern2, texto_total, re.IGNORECASE | re.DOTALL)
+                if match:
+                    full_value = match.group(1)
+                    main, decimal = full_value.split(',')
+                    decimal = decimal[:2]
+                    aliquota_value = f"{main},{decimal}"
+            except:
+                pass
+        # Apos aliquota ISS, pegue o primeiro valor que tem mais de 4 casas decimais apos a virgula e formate para 2 casas
+        if not aliquota_value:
+            try:
+                pattern5 = r'Alíquota\s+ISS.*?([\d\.]{1,},\d{5,})'
+                match = re.search(pattern5, texto_total, re.IGNORECASE | re.DOTALL)
+                if match:
+                    raw_value = match.group(1)
+                    # Convertendo a string para um float e formatando
+                    formatted_value = "{:.2f}".format(float(raw_value.replace(',', '.'))).replace('.', ',')
+                    aliquota_value = formatted_value
+                    if aliquota_value != "0,00":
+                        return aliquota_value
+            except:
+                pass
+
+            # Tentativa 4: Captura um valor após a string "Aliquota=" e transforma em formato 0,00
+        if not aliquota_value:
+            try:
+                pattern4 = r'Aliquota=(\d+)'  # este regex irá pegar um ou mais dígitos após "Aliquota="
+                match = re.search(pattern4, texto_total)
+                if match:
+                    aliquota_int = match.group(1)
+                    aliquota_value = "{:.2f}".format(float(aliquota_int)).replace(".", ",")
+                    if aliquota_value != "0,00":
+                        return aliquota_value
+            except Exception as e:
+                print(f"Erro ao processar Aliquota: {e}")
+
+        if not aliquota_value:
+            try:
+                pattern6 = r'Alíquota\s+\(%\).*?([\d\.]{1,},\d{3,})'
+                match = re.search(pattern6, texto_total, re.IGNORECASE | re.DOTALL)
+                if match:
+                    raw_value = match.group(1)
+                    # Convertendo a string para um float e formatando
+                    formatted_value = "{:.2f}".format(float(raw_value.replace(',', '.'))).replace('.', ',')
+                    aliquota_value = formatted_value
+                    if aliquota_value != "0,00":
+                        return aliquota_value
+                    
+            except:
+                pass
+        
+        if not aliquota_value:
+            try:
+                pattern7 = r'Base de Cálculo.*?\n.*?(\d+,\d{3,})%'
+                match = re.search(pattern7, texto_total, re.IGNORECASE | re.DOTALL)
+                if match:
+                    full_value = match.group(1)
+                    main, decimal = full_value.split(',')
+                    decimal = decimal[:2]  # Limitar para 2 casas decimais
+                    formatted_value = f"{main},{decimal}"
+                    return formatted_value  # Deve imprimir '2,00'
+            except:
+                pass
+
+        # Brasilia
+        # Tentativa 3: Pegar o primeiro valor numérico que tem tanto uma vírgula `,` quanto um ponto `.`
+        if not aliquota_value:
+            try:
+                pattern3 = r'Alíquota.*?(\d{1,2},\d{1,2}\.)'
+                match = re.search(pattern3, texto_total, re.DOTALL)
+                if match:
+                    # Remover o ponto ao final
+                    aliquota_value = match.group(1)[:-1]
+            except:
+                pass
+
+        if aliquota_value and aliquota_value != "0,00":
+            return aliquota_value
+        
+        return None
+
+    def extract_text_from_pdf_with_pdfplumber(self, num_docto, id_solicitacao):
+        caminho_pdf = rf"C:\Users\user\Documents\APs\nota_{num_docto}{id_solicitacao}.pdf"
+        
+        texto_total = ""
+        try:
+            with pdfplumber.open(caminho_pdf) as pdf:
+                for pagina in pdf.pages:
+                    texto = pagina.extract_text()
+                    if texto:
+                        texto_total += texto + '\n'
+        except Exception as e:
+            print(f"Erro ao ler o PDF: {e}")
+            return None
+        
+        return texto_total
+    
+    def extract_access_key_from_image(self, num_docto, id_solicitacao):
+        texto_total = self.extract_text_from_pdf(num_docto, id_solicitacao)
+        # print(texto_total)
+        
+        try:  
+            # pattern = r'- NOTA CARIOCA -\s*([\w-]+)'
+            pattern = r'\b[A-Za-z0-9]{4}-[A-Za-z0-9]{4}\b'
+            match = re.search(pattern, texto_total)
+            if match:
+                return match.group()
+            else:
+                return None
+        except:
+            pass
+
+    def extract_aliquota_from_image(self, num_docto, id_solicitacao):
+        # texto_total = self.extract_text_from_pdf(num_docto, id_solicitacao)
+        # # print(texto_total)
+        # # sp/rj
+        # try:
+        #     pattern = r'(\d{1,2},\d{2}\%)'
+        #     match = re.search(pattern, texto_total)
+        #     if match is not None:
+        #         aliquota = match.group(1)
+        #         if aliquota == '0,00%':
+        #             return None
+        #         return aliquota
+        # except:
+        #     pass
+        texto_total = self.extract_text_from_pdf(num_docto, id_solicitacao)
+        # print(texto_total)
+        
+        # Verificando a presença das palavras "CARIOCA" ou "Sao Paulo"
+        if re.search(r'CARIOCA|Sao Paulo', texto_total, re.IGNORECASE):
+            # sp/rj
+            try:
+                pattern = r'(\d{1,2},\d{2}\%)'
+                match = re.search(pattern, texto_total)
+                if match is not None:
+                    aliquota = match.group(1)
+                    if aliquota == '0,00%':
+                        return None
+                    return aliquota
+            except:
+                pass
+        return None
+
+    def extract_service_code_from_image(self, num_docto, id_solicitacao):
+        texto_total = self.extract_text_from_pdf(num_docto, id_solicitacao)
+        # print(texto_total)
+        # Primeira tentativa: Servico Prestado
+        try:
+            pattern = r'(?:Servico Prestado)[\s\S]*?([\d\.]{1,7})'
+            match = re.search(pattern, texto_total)
+            if match:
+                # Remove pontos e considera apenas os primeiros 4 dígitos
+                code = ''.join([char for char in match.group(1) if char.isdigit()])[:4]
+                # Remove zeros à esquerda
+                return code.lstrip('0')
+        except Exception as e:
+            print("Erro na primeira tentativa:", e)
+            
+        # Segunda tentativa: Cadigo do Servico
+        try:
+            pattern = r'(?:Cadigo do Servico)[\s\S]*?([\d\.]{1,7})'
+            match = re.search(pattern, texto_total)
+            if match:
+                # Remove pontos e considera apenas os primeiros 4 dígitos
+                code = ''.join([char for char in match.group(1) if char.isdigit()])[:4]
+                # Remove zeros à esquerda
+                return code.lstrip('0')
+        except Exception as e:
+            print("Erro na segunda tentativa:", e)
+        
+        # Se nenhuma das tentativas funcionar, retorne None
+        return None
+
+    def get_total_disponivel(self):
+        title = "Entrada Diversas / Operação: 52-Entrada Diversas"
+        try:
+            app = Application(backend='uia').connect(title=title)
+        except ElementNotFoundError:
+            print("Não foi possível se conectar com a janela de cadastro de nf")
+            return 
+        janela = app[title]
+
+        # for index in range(0,100):
+        total_disponivel = janela.child_window(class_name='TOvcPictureField', found_index=3)
+        total_disponivel.click_input()
+        time.sleep(0.5)
+        pyautogui.doubleClick()
+        time.sleep(0.5)
+        pyautogui.hotkey('ctrl','c')
+        time.sleep(0.5)
+        texto_copiado = pyperclip.paste()
+        texto_copiado = texto_copiado.strip()
+
+        return texto_copiado
+
     def funcao_main(self):
         registros = database.consultar_dados_cadastro()
         empresa_anterior = None
@@ -1387,18 +1919,20 @@ class NbsRpa():
             time.sleep(1)
             chave_de_acesso_value = self.get_chave_acesso(numerodocto, id_solicitacao)
             print(chave_de_acesso_value)
+            cod_nfse = self.get_codigo_from_pdf(numerodocto, id_solicitacao)
             serie_nota = self.get_serie(numerodocto, id_solicitacao)
             pdf_inteiro = self.extract_text_from_pdf(numerodocto, id_solicitacao)
             natureza_value = self.find_isolated_5102(pdf_inteiro)
             icms = self.get_valor_icms(numerodocto, id_solicitacao)
             boletos = database.consultar_boleto(id_solicitacao)
             time.sleep(1)
-            success, message = self.check_conditions(tipo_docto_value, chave_de_acesso_value, serie_nota, natureza_value, vencimento_value, inss, irff, piscofinscsl, tipo_pagamento_value, icms, boletos)  
+            success, message = self.check_conditions(tipo_docto_value, chave_de_acesso_value, serie_nota, natureza_value, vencimento_value, inss, irff, piscofinscsl, tipo_pagamento_value, icms, boletos, cod_nfse)  
             time.sleep(2)
             if success:
                 # try:
-                wise_instance.get_xml(chave_de_acesso_value)
-                time.sleep(2)
+                if tipo_docto_value == 'NFE':
+                    wise_instance.get_xml(chave_de_acesso_value)
+                    time.sleep(2)
                 self.back_to_nbs()
                 time.sleep(2)
                 # wise_instance.fechar_aba()
@@ -1410,13 +1944,15 @@ class NbsRpa():
                     time.sleep(3)
                     self.open_application()
                     self.login()
+                    cod_matriz = row[3]
                     self.janela_empresa_filial(row[2], row[3])
                 empresa_anterior = empresa_atual
                 print(empresa_anterior, empresa_atual)
                 self.access_contas_a_pagar()
-                self.janela_entrada()
-                self.importar_xml()
-                self.abrir_xml(chave_de_acesso_value)
+                self.janela_entrada(tipo_docto_value)
+                if tipo_docto_value == 'NFE':
+                    self.importar_xml()
+                    self.abrir_xml(chave_de_acesso_value)
                 cnpj = row[1]
                 contab_descricao_value = row[6]
                 cod_contab_value = row[7]
@@ -1426,6 +1962,7 @@ class NbsRpa():
                 valor_sg = row[15] 
                 id_rateiocc = row[16]
                 obs = row[17]
+                cidade_cliente = row[19]
                 rateios_aut = database.consultar_rateio_aut(id_rateiocc)
                 boletos = database.consultar_boleto(id_solicitacao)
                 rateios = database.consultar_rateio(id_solicitacao)
@@ -1434,7 +1971,7 @@ class NbsRpa():
                 terceiro = row[12]
                 estado = row[13]
                 time.sleep(3)
-                self.janela_cadastro_nf(cnpj, numerodocto, serie_value, data_emissao_value, tipo_docto_value, valor_value, contab_descricao_value, total_parcelas_value, tipo_pagamento_value, natureza_financeira_value, numeroos, terceiro, estado, usa_rateio_centro_custo, valor_sg, rateios, rateios_aut, inss, irff, piscofinscsl, iss, vencimento_value, obs, cod_contab_value, boletos, num_parcelas, id_solicitacao, chave_de_acesso_value)
+                self.janela_cadastro_nf(cnpj, numerodocto, serie_value, data_emissao_value, tipo_docto_value, valor_value, contab_descricao_value, total_parcelas_value, tipo_pagamento_value, natureza_financeira_value, numeroos, terceiro, estado, usa_rateio_centro_custo, valor_sg, rateios, rateios_aut, inss, irff, piscofinscsl, iss, vencimento_value, obs, cod_contab_value, boletos, num_parcelas, id_solicitacao, chave_de_acesso_value, cod_matriz, cidade_cliente, empresa_atual)
                 self.janela_imprimir_nota()
                 self.janela_secundario_imprimir_nota()
                 self.extract_pdf()
@@ -1462,7 +1999,7 @@ class NbsRpa():
                 time.sleep(2)
                 self.close_aplications_half()
                 time.sleep(1)
-                self.send_success_message(id_solicitacao, numerodocto)
+                self.send_success_message(id_solicitacao, numerodocto, tipo_docto_value)
                 time.sleep(3)
                 # except:
                 #     self.send_message_with_traceback(id_solicitacao, numerodocto)
