@@ -97,7 +97,8 @@ class Wise():
         self.start_chrome_debugger()
         self.init_instance_chrome()
         self.driver.get("https://gera.wisemanager.com.br/WiseManagerBI/#/financeiro/efetivacaoSolicitacaoGastoNew")
-        time.sleep(3)
+        self.reload_page()
+        # time.sleep(3)
         if self.driver.find_elements(By.NAME, "j_username") and self.driver.find_elements(By.NAME, "j_password"):
             self.login()
         time.sleep(2)
@@ -151,6 +152,7 @@ class Wise():
     def confirm(self):
         url_esperada = "https://gera.wisemanager.com.br/WiseManagerBI/#/financeiro/efetivacaoSolicitacaoGastoNew"
         if self.driver.current_url == url_esperada:
+            # self.reload_page()
             controles = WebDriverWait(self.driver, 60).until(EC.presence_of_all_elements_located((By.NAME, "numeroControle")))
             todos_preenchidos = all(controle.get_attribute('value') != "" for controle in controles if controle.is_displayed())
             if todos_preenchidos:
@@ -180,6 +182,7 @@ class Wise():
         self.init_instance_chrome()
         time.sleep(2)
         self.driver.get("https://gera.wisemanager.com.br/WiseManagerBI/#/financeiro/efetivacaoSolicitacaoGastoNew")
+        self.reload_page()
         if self.driver.find_elements(By.NAME, "j_username") and self.driver.find_elements(By.NAME, "j_password"):
             self.login()
             time.sleep(2)
@@ -230,7 +233,13 @@ class Wise():
     def fechar_aba(self):
         pyautogui.hotkey('ctrl','w')
 
+    def reload_page(self):
+        if self.driver:
+            self.driver.refresh()
+            time.sleep(3)
+
     def get_xml(self, chave_acesso):
+        self.reload_page()
         if self.driver:
             self.driver.get("https://hub.sieg.com/")
             if self.driver.find_elements(By.NAME, "txtEmail") and self.driver.find_elements(By.NAME, "txtPassword"):
@@ -243,6 +252,11 @@ class Wise():
                 botao_entrar = self.driver.find_element(By.NAME, "btnSubmit")
                 botao_entrar.click()          
             time.sleep(2)
+            # if self.driver.find_elements(By.CSS_SELECTOR, '.btn-close-alert[data-dismiss="modal"]'):      
+            #     btn_close_alert = WebDriverWait(self.driver, 10).until(
+            #     EC.presence_of_element_located((By.CSS_SELECTOR, '.btn-close-alert[data-dismiss="modal"]'))
+            #     )
+            #     btn_close_alert.click()
             botao_xml = WebDriverWait(self.driver, 60).until(EC.element_to_be_clickable((By.XPATH, "//span[text()=\"Xml's Baixados\"]")))
             botao_xml.click()
             time.sleep(2)
@@ -265,5 +279,3 @@ class Wise():
             botao_download.click()
 
 
-
-# wise.get_xml_fazenda('42230782956160001730550010000537261357285530')
