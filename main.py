@@ -240,6 +240,7 @@ class NbsRpa():
             pass
         time.sleep(2)
         file_name = janela.child_window(class_name="Edit")
+        time.sleep(5)
         file_name.type_keys(chave_acesso)
         time.sleep(1)
         pyautogui.press('enter')
@@ -254,14 +255,16 @@ class NbsRpa():
     def janela_cadastro_nf(self, cpf_cnpj_value, num_nf_value, serie_value, data_emissao_value, tipo_docto_value, valor_value, contab_descricao_value, total_parcelas_value, tipo_pagamento_value, natureza_financeira_value, numeroos, terceiro, estado, usa_rateio_centro_custo, valor_sg, rateios, rateios_aut, inss, irff, piscofinscsl, iss, vencimento_value, obs, codigo_contab, boletos, num_parcelas, id_solicitacao, chave_acesso, cod_matriz, cidade_cliente, empresa):
         title = "Entrada Diversas / Operação: 52-Entrada Diversas"
         if not self.esperar_janela_visivel(title, timeout=60):
-            print("Falha: Janela de cadastro_nf não está visível.")
-            return
+            erro_msg = "Falha: Janela de cadastro_nf não está visível."
+            print(erro_msg)
+            raise Exception(erro_msg)
+            # return
         time.sleep(5)
         try:
             app = Application(backend='uia').connect(title=title)
         except ElementNotFoundError:
             print("Não foi possível se conectar com a janela de cadastro de nf")
-            return 
+            # return 
         janela = app[title]
         time.sleep(2)
         janela.set_focus()
@@ -460,7 +463,8 @@ class NbsRpa():
             time.sleep(2)
 
         natureza_financeira_list = ['ALUGUEIS A PAGAR', 'COMBUSTÍVEIS/ LUBRIFICANTES', 'CUSTO COMBUSTIVEL NOVOS', 'CUSTO DESPACHANTE NOVOS', 'CUSTO FRETE NOVOS', 'CUSTO NOVOS', 'CUSTO OFICINA', 'DESP DESPACHANTE NOVOS', 'DESP FRETE VEIC NOVOS', 'DESP. COM SERVICOS DE OFICINA', 'DESPESA COM LAVACAO', 'DESPESA OFICINA', 'ENERGIA ELETRICA', 'FRETE', 'HONORARIO PESSOA JURIDICA', 'INFORMATICA HARDWARE', 'INFORMATICA SOFTWARE', 'INTERNET', 'MANUT. E CONSERV. DE', 'MATERIAL DE OFICINA DESPESA', 'PONTO ELETRONICO RA', 'SALARIO ERIBERTO', 'SALARIO MAGU', 'SALARIO VIVIANE', 'SALARIOS RA', 'SERVICO DE TERCEIROS FUNILARIA', 'SERVICOS DE TERCEIRO OFICINA', 'SOFTWARE', 'VALE TRANSPORTE RA', 'VD SALARIO', 'VD VEICULOS NOVOS', 'VIAGENS E ESTADIAS', 'AÇÕES EXTERNAS', 'AÇÕES LOJA', 'ADESIVOS', 'AGENCIA', 'BRINDES E CORTESIAS', 'DECORAÇÃO', 'DESENSOLVIMENTO SITE', 'DESP MKT CHERY FLORIPA', 'DISPARO SMS/WHATS', 'EVENTOS', 'EXPOSITORES', 'FACEBOOK', 'FACEBOOK/INSTAGRAM', 'FEE MENSAL', 'FEIRA/EVENTOS', 'FEIRAO', 'FOLLOWISE (MKT)', 'GOOGLE', 'INFLUENCIADORES', 'INSTITUCIONAL', 'INTEGRADOR (MKT)', 'JORNAL', 'LANCAMENTOS', 'LED', 'MARKETING', 'MERCADO LIVRE', 'MIDIA ON OUTROS', 'MIDIA/ONLINE', 'MKT', 'OUTDOOR', 'PANFLETOS', 'PATROCINIO', 'PORTAL GERACAO', 'PROSPECÇÃO', 'PUBLICIDADE E PROPAGANDA', 'RADIO', 'RD (MKT)', 'REGISTRO SITE', 'SISTEMAS (MKT)', 'SYONET AUTOMOVEIS', 'TELEVISAO', 'VENDAS EXTERNAS', 'VIDEOS', 'VITRINE', 'WISE (MKT)']
-        if not all(r[0] == "2" for r in rateios) or not all(r[0] == "2" for r in rateios_aut):
+        if not any(r[0] == "2" for r in rateios) and not any(r[0] == "2" for r in rateios_aut):
+            # print('nao existe centro custo 2')
             if natureza_financeira_value in natureza_financeira_list:
                 time.sleep(2)
                 check_pis_cofins = janela.child_window(class_name="TCheckBox", found_index=0)
@@ -829,6 +833,7 @@ class NbsRpa():
         relacao_os = janela.child_window(control_type="TabItem", title='Relação de OS')
         cadeado = r"C:\Users\user\Documents\RPA_Project\imagens\Cadeado.PNG"
         pesquisa_os = r"C:\Users\user\Documents\RPA_Project\imagens\Procura_Os.PNG"
+        select_os = r"C:\Users\user\Documents\RPA_Project\imagens\select_os.PNG"
         numero_os = janela.child_window(class_name="TOvcNumericField", found_index=0)
         try:
             self.wait_until_interactive(numero_os)
@@ -838,11 +843,29 @@ class NbsRpa():
         if numeroos != '':
             relacao_os.click_input()
             time.sleep(1)
-            numero_os.click_input()
+            num_os = self.dividir_os_em_blocos(numeroos)
             time.sleep(1)
-            pyautogui.typewrite(numeroos)
-            time.sleep(1)
-            self.click_specific_button(pesquisa_os)
+            if len(numeroos) > 7:
+                for num in num_os:
+                    numero_os.click_input()
+                    time.sleep(1)
+                    pyautogui.doubleClick()
+                    pyautogui.press('backspace')
+                    time.sleep(1)
+                    # pyautogui.typewrite(num)
+                    numero_os.type_keys(num)
+                    time.sleep(1)  
+                    self.click_specific_button(pesquisa_os)
+                    time.sleep(2)
+                    self.click_specific_button(select_os)
+            else:
+                numero_os.click_input()
+                time.sleep(1)
+                numero_os.type_keys(numeroos)
+                time.sleep(1)  
+                self.click_specific_button(pesquisa_os)
+                time.sleep(2)
+                self.click_specific_button(select_os)
         else:
             relacao_os.click_input()
             time.sleep(2)
@@ -851,6 +874,11 @@ class NbsRpa():
             pyautogui.press('tab')
             time.sleep(0.2)
             pyautogui.press('enter')
+
+    def dividir_os_em_blocos(self, os):
+        # return [os[i:i+tamanho_bloco] for i in range(0, len(os), tamanho_bloco)]
+        return os.split(',')
+
 
     def janela_valores(self):
         title = "Entrada Diversas / Operação: 52-Nota de despesas Diversas"
@@ -892,8 +920,10 @@ class NbsRpa():
     def janela_imprimir_nota(self):
         title = "Ficha de Controle de Pagamento"
         if not self.esperar_janela_visivel(title, timeout=60):
-            print("Falha: Janela de ficha de controle de pagamento não está visível.")
-            return
+            erro_msg = "Falha: Janela de ficha de controle de pagamento não está visível."
+            print(erro_msg)
+            raise Exception(erro_msg)
+            # return
         time.sleep(2)
         try:
             app = Application(backend='uia').connect(title=title)
@@ -956,6 +986,7 @@ class NbsRpa():
             print("Não foi possível se conectar com a janela Salvar como")
             return 
         janela = app[title]
+        time.sleep(2)
         try:
             get_document = janela.child_window(title="APs (fixo)")
             get_document.click_input()
@@ -965,11 +996,13 @@ class NbsRpa():
         file_name = janela.child_window(class_name="Edit")
         file_type = janela.child_window(class_name="AppControlHost", found_index=1)
         # Set Comands
+        time.sleep(2)
         try:
             self.wait_until_interactive(file_name)
         except TimeoutError as e:
             print(str(e))
             return
+        time.sleep(2)
         file_name.type_keys(f"AP_{num_docto}{id_solicitacao}")
         pyautogui.press('tab')
         try:
@@ -1373,7 +1406,7 @@ class NbsRpa():
         year = int(str_num[4:])
         return datetime.date(year, month, day) 
         
-    def check_conditions(self, tipo_docto, chave_acesso, serie, natureza, vencimento, inss, irff, piscofinscsl, tipo_pagamento, icms, boletos, cod_nfse):
+    def check_conditions(self, tipo_docto, chave_acesso, serie, natureza, vencimento, inss, irff, piscofinscsl, tipo_pagamento, icms, boletos, cod_nfse, os):
         current_date = datetime.date.today()
         converted_vencimento = self.convert_to_date(vencimento)
         # if tipo_docto != "NFE":
@@ -1407,6 +1440,9 @@ class NbsRpa():
             return False, "piscofinscsl encontrado"
         if tipo_pagamento not in ('B', 'A', 'P', 'D', 'E', 'C', 'O'):
             return False, "tipo de pagamento diferente do configurado"
+        if os != '':
+            if len(os) > 7 and ',' not in os:
+                return False, "Os não estão separadas por vírgula"
         
         return True, "Condições aceitas"
         
@@ -1605,57 +1641,87 @@ class NbsRpa():
         
         return serie
 
+
+    # def get_codigo_from_pdf(self, num_docto, id_solicitacao):
+    #     texto_total = self.extract_text_from_pdf_with_pdfplumber(num_docto, id_solicitacao)
+
+    #     # Padrão 1
+    #     codigos_pattern1 = (r'(?i)(Código\s*de\s*Verificação|Código\s*de\s*Validação|Autenticidade|Chave\s*Acesso|'
+    #                         r'Chave\s*de\s*Acesso|Chave\s*de\s*Acesso\s*daNFS-e)[^A-Z0-9]*?'
+    #                         r'(?:[A-Z]*\s*[A-Z]*\s*[A-Z]*\s*[A-Z]*\s*[A-Z]*\s*[A-Z]*\s*)?(\d{8,}\b)(?!.*000000)')
+
+    #     codigo_match1 = re.search(codigos_pattern1, texto_total)
+    #     codigo1 = codigo_match1.group(2) if codigo_match1 and "000000" not in codigo_match1.group(2) else None
+
+    #     if not codigo1:
+    #         # Padrão 2
+    #         codigos_pattern2 = (r'(?i)(?:Código\s*de\s*Verificação|Código\s*de\s*Validação|Autenticidade|Chave\s*Acesso|'
+    #                             r'Chave\s*de\s*Acesso|Chave\s*de\s*Acesso\s*daNFS-e)[\s\S]*?'
+    #                             r'((?:[A-Z]{8,})|(?:[A-Z0-9]{6,}(?:(?:[A-Z][A-Z0-9]*[0-9])|(?:[0-9][A-Z0-9]*[A-Z]))))(?!.*000000)\b')
+
+    #         codigo_match2 = re.search(codigos_pattern2, texto_total)
+    #         codigo2 = codigo_match2.group(1) if codigo_match2 and "000000" not in codigo_match2.group(1) else None
+    #         return codigo2
+
+    #     return codigo1
+
     def get_codigo_from_pdf(self, num_docto, id_solicitacao):
-        texto_total = self.extract_text_from_pdf_with_pdfplumber(num_docto, id_solicitacao)   
-        # caminho_pdf = rf"C:\Users\user\Documents\APs\nota_{num_docto}{id_solicitacao}.pdf"
-        
-        # texto_total = ""
-        # with pdfplumber.open(caminho_pdf) as pdf:
-        #     for pagina in pdf.pages:
-        #         texto = pagina.extract_text()
-        #         if texto:
-        #             texto_total += texto + '\n'
-                    # print(texto_total)
+        texto_total = self.extract_text_from_pdf_with_pdfplumber(num_docto, id_solicitacao)
+        # print(texto_total)
 
-        codigos_pattern1 = r'(?i)(Código\s*de\s*Verificação|Código\s*de\s*Validação|Autenticidade|Chave\s*Acesso|Chave\s*de\s*Acesso|Chave\s*de\s*Acesso\s*daNFS-e)[^A-Z0-9]*?\b((?=[A-Z]{8,})[A-Z]{8,}|(?=.*[0-9])(?=.*[A-Z])[A-Z0-9]{8,}|\b\d{8,}\b)\b'
+        # Novo padrão para "Chave de Acesso da NFS-e"
+        chave_acesso_pattern = r'ChavedeAcessodaNFS-e\s*(\d{8,})'
+        chave_acesso_match = re.search(chave_acesso_pattern, texto_total)
+        if chave_acesso_match:
+            return chave_acesso_match.group(1)
 
+        codigos_pattern1 = (r'(?i)(Código\s*de\s*Verificação|Código\s*de\s*Validação|Autenticidade|Chave\s*Acesso|'
+                            r'Chave\s*de\s*Acesso|Chave\s*de\s*Acesso\s*daNFS-e)[^A-Z0-9]*?'
+                            r'(?:[A-Z]*\s*[A-Z]*\s*[A-Z]*\s*[A-Z]*\s*[A-Z]*\s*[A-Z]*\s*)?(\d{8,}\b)(?!.*000000)')
         codigo_match1 = re.search(codigos_pattern1, texto_total)
-        codigo1 = codigo_match1.group(2) if codigo_match1 else None
+        codigo1 = codigo_match1.group(2) if codigo_match1 and "000000" not in codigo_match1.group(2) else None
 
         if not codigo1:
-            # 3. Termos maiúsculos que contêm letras e números na mesma string.
-            codigos_pattern2 = r'(?i)(?:Código\s*de\s*Verificação|Código\s*de\s*Validação|Autenticidade|Chave\s*Acesso|Chave\s*de\s*Acesso|Chave\s*de\s*Acesso\s*daNFS-e)[\s\S]*?\b([A-Z0-9]*[A-Z][A-Z0-9]*[0-9][A-Z0-9]*|[A-Z0-9]*[0-9][A-Z0-9]*[A-Z][A-Z0-9]*)\b'
-            codigo_match2 = re.search(codigos_pattern2, texto_total)
-            codigo2 = codigo_match2.group(1) if codigo_match2 else None
-            return codigo2
+            codigos_pattern5 = (r'(?i)Código de autenticação da NFSe:\s*([^\s]+)')
+            codigo_match5 = re.search(codigos_pattern5, texto_total)
+            if codigo_match5:
+                codigo5 = codigo_match5.group(1)
+                return codigo5
 
-        return codigo1
-    
+        if not codigo1:
+            codigos_pattern4 = (r'(?i)Identificador[\s\S]*?((?:\d{4}\s){9}\d{4})')
+            codigo_match4 = re.search(codigos_pattern4, texto_total)
+            if codigo_match4:
+                codigo4 = codigo_match4.group(1).replace(' ', '')  # remove os espaços do código capturado
+                if "000000" not in codigo4:
+                    return codigo4
+
+        return None  # Retorna None se nenhum código for encontrado
+        
     def get_service_code(self, num_docto, id_solicitacao):
-        texto_total = self.extract_text_from_pdf_with_pdfplumber(num_docto, id_solicitacao)   
-        # caminho_pdf = rf"C:\Users\user\Documents\APs\nota_{num_docto}{id_solicitacao}.pdf"
+        texto_total = self.extract_text_from_pdf_with_pdfplumber(num_docto, id_solicitacao) 
+        # print(texto_total) 
         
-        # texto_total = ""
-        # try:
-        #     with pdfplumber.open(caminho_pdf) as pdf:
-        #         for pagina in pdf.pages:
-        #             texto = pagina.extract_text()
-        #             if texto:
-        #                 texto_total += texto + '\n'
-        #                 # print(texto_total)
-        # except Exception as e:
-        #     print(f"Erro ao ler o PDF: {e}")
-        #     return None
+        pattern1 = r'C[oó]digodeTributa[cç][aã]oNacional\s*[^0-9]*([1-9]\d{0,1}\.\d{1,2})'
+        pattern2 = r'(c[oó]dig(?:o|os)?\s*(?:de|dos)?\s*servi[cç][oó]s|atividade\s*do\s*munic[ií]pio|c[oó]digo\s*de\s*tributa[cç][aã]o\s*nacional)\s*[^0-9]*\s*(\d{1,2}\.\d{1,2}(?:\.\d{1,2})?)'
+        pattern3 = r'Atividade:\s*[^0-9]*(\d{1,5})'  # Procura pelo termo "Atividade:" seguido por qualquer número de caracteres não numéricos e então um número com até 5 dígitos.
         
-        # pattern = r'(c[oó]dig(?:o|os)?\s*(?:de|dos)?\s*servi[cç][oó]s|atividade\s*do\s*munic[ií]pio|c[oó]digo\s*de\s*tributa[cç][aã]o\s*nacional)[^\d]*(\d{1,2}\.\d{1,2}\.\d{1,2})'
-        # pattern = r'(c[oó]dig(?:o|os)?\s*(?:de|dos)?\s*servi[cç][oó]s|atividade\s*do\s*munic[ií]pio|c[oó]digo\s*de\s*tributa[cç][aã]o\s*nacional)[^0-9]*(\d{1,2}\.\d{1,2}\.\d{1,2})'
-        pattern = r'(c[oó]dig(?:o|os)?\s*(?:de|dos)?\s*servi[cç][oó]s|atividade\s*do\s*munic[ií]pio|c[oó]digo\s*de\s*tributa[cç][aã]o\s*nacional)\s*[^0-9]*\s*(\d{1,2}\.\d{1,2}(?:\.\d{1,2})?)'
+        match1 = re.search(pattern1, texto_total, re.IGNORECASE)
         
-        match = re.search(pattern, texto_total, re.IGNORECASE)
-        
-        if match:
-            code = match.group(2).replace('.', '')
+        if match1:
+            code = match1.group(1).replace('.', '')
             return code[:4]
+        
+        match2 = re.search(pattern2, texto_total, re.IGNORECASE)
+        
+        if match2:
+            code = match2.group(1).replace('.', '')
+            return code[:4]
+        
+        match3 = re.search(pattern3, texto_total, re.IGNORECASE)
+        
+        if match3:
+            return match3.group(1)[:4]
 
         return None
     
@@ -1672,6 +1738,7 @@ class NbsRpa():
 
     def get_aliquota(self, num_docto, id_solicitacao):
         texto_total = self.extract_text_from_pdf_with_pdfplumber(num_docto, id_solicitacao) 
+        # print(texto_total)
         aliquota_value = None
         # Lages
         # Tentativa 1: Após "Base de cálculo (%)", pegue o número após o 'x'
@@ -1692,7 +1759,7 @@ class NbsRpa():
                 if match:
                     full_value = match.group(1)
                     main, decimal = full_value.split(',')
-                    decimal = decimal[:2]
+                    decimal = decimal[:4] # limitar em 4 casas decimais
                     aliquota_value = f"{main},{decimal}"
             except:
                 pass
@@ -1746,9 +1813,53 @@ class NbsRpa():
                 if match:
                     full_value = match.group(1)
                     main, decimal = full_value.split(',')
-                    decimal = decimal[:2]  # Limitar para 2 casas decimais
+                    decimal = decimal[:4]  # Limitar para 4 casas decimais
                     formatted_value = f"{main},{decimal}"
-                    return formatted_value  # Deve imprimir '2,00'
+                    return formatted_value
+            except:
+                pass
+
+        # Após "Alíquota", pegue o primeiro número que tem 3 ou mais casas após a vírgula
+        if not aliquota_value:
+            try:
+                # pattern8 = r'Alíquota.*?(\b\d\.\d{3,4}\b)'
+                pattern8 = r'Alíquota\s*(\b\d\.\d{3,4}\b)(?!\s*/)'
+                match = re.search(pattern8, texto_total, re.IGNORECASE | re.DOTALL)
+                if match:
+                    aliquota_value = match.group(1).replace('.', ',')  # Substitua o ponto por uma vírgula
+            except:
+                pass
+
+        if not aliquota_value:
+            try:
+                pattern9 = r'Alíquota \(%\).*?(\d+,\d{1,4})\s?'
+                match = re.search(pattern9, texto_total, re.IGNORECASE | re.DOTALL)
+
+                if match:
+                    aliquota_value = match.group(1)
+                    return aliquota_value # Deve imprimir 2,00
+            except:
+                pass
+
+        if not aliquota_value:
+            try:
+                pattern10 = r'Alíquota\s+Situação[\s\S]*?(\d+%)'
+                match = re.search(pattern10, texto_total, re.IGNORECASE | re.DOTALL)
+
+                if match:
+                    aliquota_value = match.group(1)
+                    return aliquota_value 
+            except:
+                pass
+
+        if not aliquota_value:
+            try:
+                pattern11 = r'Aliquota da Atividade:\s*([\d,]+)'
+                match = re.search(pattern11, texto_total, re.IGNORECASE)
+
+                if match:
+                    aliquota_value = match.group(1)
+                    return aliquota_value
             except:
                 pass
 
@@ -1768,6 +1879,7 @@ class NbsRpa():
             return aliquota_value
         
         return None
+
 
     def extract_text_from_pdf_with_pdfplumber(self, num_docto, id_solicitacao):
         caminho_pdf = rf"C:\Users\user\Documents\APs\nota_{num_docto}{id_solicitacao}.pdf"
@@ -1817,8 +1929,7 @@ class NbsRpa():
         texto_total = self.extract_text_from_pdf(num_docto, id_solicitacao)
         # print(texto_total)
         
-        # Verificando a presença das palavras "CARIOCA" ou "Sao Paulo"
-        if re.search(r'CARIOCA|Sao Paulo', texto_total, re.IGNORECASE):
+        if re.search(r'CARIOCA|MUNICIPIO DE SAO PAULO', texto_total, re.IGNORECASE):
             # sp/rj
             try:
                 pattern = r'(\d{1,2},\d{2}\%)'
@@ -1892,6 +2003,7 @@ class NbsRpa():
             id_empresa = row[18]
             id_solicitacao = row[0]
             tipo_pagamento_value = row[5]
+            numeroos = row[11]
             notas_fiscais = database.consultar_nota_fiscal(id_solicitacao)
             if notas_fiscais:
                 numerodocto = notas_fiscais[0][2]
@@ -1926,7 +2038,7 @@ class NbsRpa():
             icms = self.get_valor_icms(numerodocto, id_solicitacao)
             boletos = database.consultar_boleto(id_solicitacao)
             time.sleep(1)
-            success, message = self.check_conditions(tipo_docto_value, chave_de_acesso_value, serie_nota, natureza_value, vencimento_value, inss, irff, piscofinscsl, tipo_pagamento_value, icms, boletos, cod_nfse)  
+            success, message = self.check_conditions(tipo_docto_value, chave_de_acesso_value, serie_nota, natureza_value, vencimento_value, inss, irff, piscofinscsl, tipo_pagamento_value, icms, boletos, cod_nfse, numeroos)  
             time.sleep(2)
             if success:
                 # try:
@@ -1967,7 +2079,7 @@ class NbsRpa():
                 boletos = database.consultar_boleto(id_solicitacao)
                 rateios = database.consultar_rateio(id_solicitacao)
                 num_parcelas = database.numero_parcelas(id_solicitacao, numerodocto)
-                numeroos = row[11]
+                # numeroos = row[11]
                 terceiro = row[12]
                 estado = row[13]
                 time.sleep(3)
