@@ -974,6 +974,12 @@ class NbsRpa():
         time.sleep(1)
         pyautogui.press('s')
 
+    def type_slowly(self, element, text, delay=0.3):
+        """Types the text into the element with a delay between each keystroke."""
+        for character in text:
+            element.type_keys(character)
+            time.sleep(delay)
+
     def save_as(self, num_docto, id_solicitacao):
         title = "Salvar como"
         if not self.esperar_janela_visivel(title, timeout=60):
@@ -1003,7 +1009,8 @@ class NbsRpa():
             print(str(e))
             return
         time.sleep(2)
-        file_name.type_keys(f"AP_{num_docto}{id_solicitacao}")
+        # file_name.type_keys(f"AP_{num_docto}{id_solicitacao}")
+        self.type_slowly(file_name, f"AP_{num_docto}{id_solicitacao}")
         pyautogui.press('tab')
         try:
             self.wait_until_interactive(file_type)
@@ -1447,11 +1454,11 @@ class NbsRpa():
         return True, "Condições aceitas"
         
     def send_message_pre_verification(self, msg, id_solicitacao, numerodocto):
-        # chat_id = '-995541913' 
-        chat_ids_results = database.consultar_chat_id()
+        chat_ids_results = database.consultar_chat_id_dev()
         token_result = database.consultar_token_bot()
-        chat_id1, chat_id2 = chat_ids_results[0][0], chat_ids_results[1][0]
-        chat_ids = [chat_id1, chat_id2] 
+
+        chat_ids = [result[0] for result in chat_ids_results]
+
         token = token_result[0][0]
         # base_url = f"https://api.telegram.org/bot6563290849:AAEVdZmaKFWOTmUdIYeAcGhq3_cUu4sX2qE/sendMessage"
         base_url = f"https://api.telegram.org/bot{token}/sendMessage"
@@ -2097,7 +2104,7 @@ class NbsRpa():
                 time.sleep(2)
                 print(num_controle)
                 time.sleep(5)
-                wise_instance.Anexar_AP(id_solicitacao, num_controle, numerodocto)
+                wise_instance.Anexar_AP(id_solicitacao, num_controle, numerodocto, serie_value)
                 time.sleep(2)
                 wise_instance.get_pdf_file(numerodocto, id_solicitacao)
                 time.sleep(4)
