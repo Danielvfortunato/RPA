@@ -93,7 +93,7 @@ class Wise():
         password_field.send_keys('Da131800!')
         password_field.submit()
 
-    def Anexar_AP(self, id_solicitacao, num_controle, num_docto):
+    def Anexar_AP(self, id_solicitacao, num_controle, num_docto, serie_value):
         self.start_chrome_debugger()
         self.init_instance_chrome()
         self.driver.get("https://gera.wisemanager.com.br/WiseManagerBI/#/financeiro/efetivacaoSolicitacaoGastoNew")
@@ -118,22 +118,27 @@ class Wise():
         numeros_docto = WebDriverWait(self.driver, 60).until(EC.presence_of_all_elements_located((By.NAME, "numeroDocto")))
         controles = WebDriverWait(self.driver, 60).until(EC.presence_of_all_elements_located((By.NAME, "numeroControle")))
         time.sleep(2)
-        for numero_docto_el, controle in zip(numeros_docto, controles):
+        serie_elements = WebDriverWait(self.driver, 60).until(EC.presence_of_all_elements_located((By.NAME, "serie")))
+        for numero_docto_el, controle_el, serie_el in zip(numeros_docto, controles, serie_elements):
             valor_docto = numero_docto_el.get_attribute('value')
-            if valor_docto == num_docto:
-                controle.send_keys(num_controle)
+            valor_serie = serie_el.get_attribute('value')
+            
+            if valor_docto == num_docto and valor_serie == serie_value:
+                controle_el.send_keys(num_controle)
+        
         time.sleep(2)
         file_input = WebDriverWait(self.driver, 60).until(EC.presence_of_element_located((By.XPATH, "//input[@class='file-input']")))
         self.driver.execute_script("arguments[0].click();", file_input)
 
     def get_pdf_file(self, numero_docto, id_solicitacao):
-        title = "WiseManager - Google Chrome"
+        title = "Abrir"
+        time.sleep(3)
         if not self.esperar_janela_visivel(title, timeout=60):
-            print("Falha: Janela de calculo de tributos não está visível.")
+            print("Falha: Janela de página pegar pdf não está visível.")
             return
         time.sleep(2)
         try:
-            app = Application(backend="uia").connect(title=title)
+            app = Application(backend="win32").connect(title=title)
         except ElementNotFoundError:
             print("Falha ao conectar com página pegar pdf")
             return 
@@ -226,12 +231,19 @@ class Wise():
         self.click_specific_button_wise(get_document)
         time.sleep(2)
         file_name = janela.child_window(class_name="Edit")
-        file_name.type_keys(f"nota_{num_docto}{id_solicitacao}")
+        # file_name.type_keys(f"nota_{num_docto}{id_solicitacao}")
+        self.type_slowly(file_name, f"nota_{num_docto}{id_solicitacao}")
         time.sleep(1)
         pyautogui.press('enter')
     
     def fechar_aba(self):
         pyautogui.hotkey('ctrl','w')
+
+    def type_slowly(self, element, text, delay=0.3):
+        """Types the text into the element with a delay between each keystroke."""
+        for character in text:
+            element.type_keys(character)
+            time.sleep(delay)
 
     def reload_page(self):
         if self.driver:
@@ -279,3 +291,9 @@ class Wise():
             botao_download.click()
 
 
+
+
+# wise = Wise()
+# wise.Anexar_AP('148624', '123', '135814', '1')
+# time.sleep(2)
+# wise.get_pdf_file('6','715148316')
