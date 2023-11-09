@@ -1457,6 +1457,8 @@ class NbsRpa():
         chat_ids_results = database.consultar_chat_id_dev()
         token_result = database.consultar_token_bot()
 
+        # chat_id1, chat_id2 = chat_ids_results[0][0], chat_ids_results[1][0]
+        # chat_ids = [chat_id1, chat_id2]
         chat_ids = [result[0] for result in chat_ids_results]
 
         token = token_result[0][0]
