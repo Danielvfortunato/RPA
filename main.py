@@ -19,11 +19,12 @@ from decimal import Decimal, ROUND_DOWN
 import os
 import nlp3
 import pyperclip
+from pathlib import Path
 
 class NbsRpa():
     
     def __init__(self):
-        pass
+        self.existe_xml = False
     
     def open_application(self):
         try:
@@ -221,7 +222,7 @@ class NbsRpa():
         time.sleep(2)
         self.click_specific_button(xml)
 
-    def abrir_xml(self, chave_acesso):
+    def abrir_xml(self, chave_acesso, num_docto, id_solicitacao):
         title = "Abrir"
         if not self.esperar_janela_visivel(title, timeout=60):
             print("Falha: Janela de entradas não está visível.")
@@ -241,7 +242,12 @@ class NbsRpa():
         time.sleep(2)
         file_name = janela.child_window(class_name="Edit")
         time.sleep(5)
-        file_name.type_keys(chave_acesso)
+        if self.xml_existe == False:
+            # file_name.type_keys(chave_acesso)
+            self.type_slowly(file_name, chave_acesso)
+        else:
+            # file_name.type_keys(f"xml_{num_docto}_{id_solicitacao}")
+            self.type_slowly(file_name, f"xml_{num_docto}_{id_solicitacao}")
         time.sleep(1)
         pyautogui.press('enter')
         time.sleep(3)
@@ -338,8 +344,9 @@ class NbsRpa():
                 print(str(e))
                 return
             vlr_iss.type_keys(valor_value)
-            aliquota = self.get_aliquota(num_nf_value, id_solicitacao)
-            aliquota_img = self.extract_aliquota_from_image(num_nf_value, id_solicitacao)
+            if self.xml_existe == False:
+                aliquota = self.get_aliquota(num_nf_value, id_solicitacao)
+                aliquota_img = self.extract_aliquota_from_image(num_nf_value, id_solicitacao)
             time.sleep(3)
             try:
                 self.wait_until_interactive(aliquota_field)
@@ -349,34 +356,48 @@ class NbsRpa():
             time.sleep(1)
             aliquota_field.click_input()
             time.sleep(1)
-            if aliquota != '0,00' and aliquota is not None:
-                time.sleep(1)
-                pyautogui.doubleClick()
-                time.sleep(1)
-                pyautogui.press('backspace')
-                time.sleep(1)
-                pyautogui.typewrite(aliquota)
-            elif aliquota is None and aliquota_img is not None:
-                time.sleep(1)
-                pyautogui.doubleClick()
-                time.sleep(1)
-                pyautogui.press('backspace')
-                time.sleep(1)
-                pyautogui.typewrite(aliquota_img)
-                time.sleep(1)
+            if self.xml_existe == False:
+                if aliquota != '0,00' and aliquota is not None:
+                    time.sleep(1)
+                    pyautogui.doubleClick()
+                    time.sleep(1)
+                    pyautogui.press('backspace')
+                    time.sleep(1)
+                    pyautogui.typewrite(aliquota)
+                elif aliquota is None and aliquota_img is not None:
+                    time.sleep(1)
+                    pyautogui.doubleClick()
+                    time.sleep(1)
+                    pyautogui.press('backspace')
+                    time.sleep(1)
+                    pyautogui.typewrite(aliquota_img)
+                    time.sleep(1)
+            else:
+                aliquota_xml = self.get_aliquota_from_xml_nfs(num_nf_value, id_solicitacao)
+                if aliquota_xml != '0,00' and aliquota_xml is not None:
+                    time.sleep(1)
+                    pyautogui.doubleClick()
+                    time.sleep(1)
+                    pyautogui.press('backspace')
+                    time.sleep(1)
+                    pyautogui.typewrite(aliquota_xml)
             for _ in range(3):
                 pyautogui.press('tab')
                 time.sleep(1)
-            cod_servico = self.get_service_code(num_nf_value, id_solicitacao)
-            cod_servico_img = self.extract_service_code_from_image(num_nf_value, id_solicitacao)
-            time.sleep(2)
-            if cod_servico is not None:
-                pyautogui.typewrite(cod_servico)
-            elif cod_servico is None and cod_servico_img is not None:
-                pyautogui.typewrite(cod_servico_img)
+            if self.xml_existe == False:
+                cod_servico = self.get_service_code(num_nf_value, id_solicitacao)
+                cod_servico_img = self.extract_service_code_from_image(num_nf_value, id_solicitacao)
+                time.sleep(2)
+                if cod_servico is not None:
+                    pyautogui.typewrite(cod_servico)
+                elif cod_servico is None and cod_servico_img is not None:
+                    pyautogui.typewrite(cod_servico_img)
+                else:
+                    cod_servico_nlp = nlp3.refine_best_match_code(num_nf_value, id_solicitacao)
+                    pyautogui.typewrite(cod_servico_nlp)
             else:
-                cod_servico_nlp = nlp3.refine_best_match_code(num_nf_value, id_solicitacao)
-                pyautogui.typewrite(cod_servico_nlp)
+                cod_servico_xml = self.get_item_lista_servico_from_xml_nfs(num_nf_value, id_solicitacao)
+                pyautogui.typewrite(cod_servico_xml)
             try:
                 self.wait_until_interactive(vlr_nf)
             except TimeoutError as e:
@@ -440,7 +461,7 @@ class NbsRpa():
                 print(str(e))
                 return
             if tipo_docto_value == 'NFE':
-                data_emissao_xml_value = self.get_data_emissao_from_xml(chave_acesso)
+                data_emissao_xml_value = self.get_data_emissao_from_xml(chave_acesso, num_nf_value, id_solicitacao)
                 mes_xml = int(data_emissao_xml_value.split('-')[1])
                 mes_atual = datetime.datetime.now().month
                 if mes_xml != mes_atual:
@@ -453,9 +474,9 @@ class NbsRpa():
             #         nota_ext.click_input()
             #     time.sleep(2)                
 
-            cfop_results = self.get_data_from_xml(chave_acesso)
+            cfop_results = self.get_data_from_xml(chave_acesso, num_nf_value, id_solicitacao)
             time.sleep(1)
-            numero_serie = self.get_serie_from_xml(chave_acesso)
+            numero_serie = self.get_serie_from_xml(chave_acesso, num_nf_value, id_solicitacao)
             has_cfop_starting_with_59 = any(item['CFOP'].startswith("59") for item in cfop_results)
 
             if numero_serie in ('890', '891','892','893','894','895','896','897','898','899') or has_cfop_starting_with_59:
@@ -527,10 +548,14 @@ class NbsRpa():
                 pyautogui.press("tab")
                 time.sleep(0.5)
             time.sleep(2)
-            if chave_nfse_value is not None:
-                pyautogui.typewrite(chave_nfse_value)
+            if self.xml_existe == False:
+                if chave_nfse_value is not None:
+                    pyautogui.typewrite(chave_nfse_value)
+                else:
+                    pyautogui.typewrite(chave_nfse_sp_tesseract)
             else:
-                pyautogui.typewrite(chave_nfse_sp_tesseract)
+                chave_nfs_value_xml = self.get_verification_code_from_xml_nfs(num_nf_value, id_solicitacao)
+                pyautogui.typewrite(chave_nfs_value_xml)
 
         time.sleep(3)
         if tipo_docto_value == 'NFE':
@@ -549,7 +574,6 @@ class NbsRpa():
                 '5405': '1407'
             }
             default_value = '2556' if estado != 'SC' else '1556'
-            # cfop_results = self.get_data_from_xml(chave_acesso)
 
             grouped_by_nature = {}
             for item in cfop_results:
@@ -1095,6 +1119,18 @@ class NbsRpa():
         self.click_specific_button(janela_anterior_nbs_entrada)
 
     def close_aplications_end(self):
+        title = "Sistema Financeiro - SISFIN"
+        if not self.esperar_janela_visivel(title, timeout=60):
+            print("Falha: Janela de Sistema Financeiro - SISFIN não está visível.")
+            return
+        time.sleep(2)
+        try:
+            app = Application(backend='win32').connect(title=title)
+        except ElementNotFoundError:
+            print("Não foi possível se conectar com a Sistema Financeiro - SISFIN")
+            return 
+        janela = app[title]
+        janela.set_focus()
         janela_anterior_sistema_financeiro = r"C:\Users\user\Documents\RPA_Project\imagens\Sair.PNG"
         self.click_specific_button(janela_anterior_sistema_financeiro)
     
@@ -1116,6 +1152,7 @@ class NbsRpa():
     #     return None
     
     def back_to_nbs(self):
+        # try:
         title = "Barra de Tarefas"
         try:
             app = Application(backend='uia').connect(title=title)
@@ -1130,6 +1167,8 @@ class NbsRpa():
             print(str(e))
             return
         minimizar_google.click_input()
+        # except:
+        #     pass
         
     def fechar_conta_contabilizacao(self):
         title = "Alterar Conta de Contabilização"
@@ -1310,101 +1349,111 @@ class NbsRpa():
         confirm.click_input()
     
     def extract_text_from_pdf(self, num_docto, id_solicitacao):
-        pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
-        caminho_pdf = rf"C:\Users\user\Documents\APs\nota_{num_docto}{id_solicitacao}.pdf"
-        imagens = convert_from_path(caminho_pdf)
-        texto_total = ""
-        for imagem in imagens:
-            texto = pytesseract.image_to_string(imagem)
-            if texto:
-                texto_total += texto + '\n'
-        return texto_total
-
-    def find_isolated_5102(self, text):
-        pattern = r'(?<!\d)5102(?!\d)'
-        result = re.search(pattern, text)
-        return True if result else False
-
-    def get_chave_acesso_pdfplumber(self, num_docto, id_solicitacao):
-        caminho_pdf = rf"C:\Users\user\Documents\APs\nota_{num_docto}{id_solicitacao}.pdf"
-        texto_total = ""
-        with pdfplumber.open(caminho_pdf) as pdf:
-            for pagina in pdf.pages:
-                texto = pagina.extract_text()
+        if self.xml_existe == False:
+            pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+            caminho_pdf = rf"C:\Users\user\Documents\APs\nota_{num_docto}{id_solicitacao}.pdf"
+            imagens = convert_from_path(caminho_pdf)
+            texto_total = ""
+            for imagem in imagens:
+                texto = pytesseract.image_to_string(imagem)
                 if texto:
                     texto_total += texto + '\n'
-        chave_acesso_match = re.search(r'(\d{44})', texto_total)
-        if not chave_acesso_match:
-            chave_acesso_match = re.search(r'((\d{4}\s*){10}\d{4})', texto_total)
-        chave_acesso = chave_acesso_match.group(0) if chave_acesso_match else None
-        if chave_acesso:
-            chave_acesso = ''.join(re.findall(r'\d', chave_acesso))
-        return chave_acesso
+            return texto_total
+        
+
+    def find_isolated_5102(self, text):
+        if self.xml_existe == False:
+            pattern = r'(?<!\d)5102(?!\d)'
+            result = re.search(pattern, text)
+            return True if result else False
+
+    def get_chave_acesso_pdfplumber(self, num_docto, id_solicitacao):
+        if self.xml_existe == False:
+            caminho_pdf = rf"C:\Users\user\Documents\APs\nota_{num_docto}{id_solicitacao}.pdf"
+            texto_total = ""
+            with pdfplumber.open(caminho_pdf) as pdf:
+                for pagina in pdf.pages:
+                    texto = pagina.extract_text()
+                    if texto:
+                        texto_total += texto + '\n'
+            chave_acesso_match = re.search(r'(\d{44})', texto_total)
+            if not chave_acesso_match:
+                chave_acesso_match = re.search(r'((\d{4}\s*){10}\d{4})', texto_total)
+            chave_acesso = chave_acesso_match.group(0) if chave_acesso_match else None
+            if chave_acesso:
+                chave_acesso = ''.join(re.findall(r'\d', chave_acesso))
+            return chave_acesso
     
     def get_chave_acesso_tesseract(self, num_docto, id_solicitacao):
-        pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
-        caminho_pdf = rf"C:\Users\user\Documents\APs\nota_{num_docto}{id_solicitacao}.pdf"
-        imagens = convert_from_path(caminho_pdf)
-        texto_total = ""
-        
-        for imagem in imagens:
-            texto = pytesseract.image_to_string(imagem)
-            if texto:
-                texto_total += texto + '\n'
-        
-        chave_acesso_match = re.search(r'(\d{44})', texto_total)
-        if not chave_acesso_match:
-            chave_acesso_match = re.search(r'((\d{4}\s*){10}\d{4})', texto_total)
-        chave_acesso = chave_acesso_match.group(0) if chave_acesso_match else None
-        
-        if chave_acesso:
-            chave_acesso = ''.join(re.findall(r'\d', chave_acesso))
-        
-        return chave_acesso
+        if self.xml_existe == False:
+            pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+            caminho_pdf = rf"C:\Users\user\Documents\APs\nota_{num_docto}{id_solicitacao}.pdf"
+            imagens = convert_from_path(caminho_pdf)
+            texto_total = ""
+            
+            for imagem in imagens:
+                texto = pytesseract.image_to_string(imagem)
+                if texto:
+                    texto_total += texto + '\n'
+            
+            chave_acesso_match = re.search(r'(\d{44})', texto_total)
+            if not chave_acesso_match:
+                chave_acesso_match = re.search(r'((\d{4}\s*){10}\d{4})', texto_total)
+            chave_acesso = chave_acesso_match.group(0) if chave_acesso_match else None
+            
+            if chave_acesso:
+                chave_acesso = ''.join(re.findall(r'\d', chave_acesso))
+            
+            return chave_acesso
 
     def get_chave_acesso(self, num_docto, id_solicitacao):
-        chave_pdfplumber = self.get_chave_acesso_pdfplumber(num_docto, id_solicitacao)
-        if chave_pdfplumber:
-            return chave_pdfplumber
-        else:
-            return self.get_chave_acesso_tesseract(num_docto, id_solicitacao)
+        if self.xml_existe == False:
+            chave_pdfplumber = self.get_chave_acesso_pdfplumber(num_docto, id_solicitacao)
+            if chave_pdfplumber:
+                return chave_pdfplumber
+            else:
+                return self.get_chave_acesso_tesseract(num_docto, id_solicitacao)
 
     def get_modelo(self, chave_acesso):
         return chave_acesso[20:22] if len(chave_acesso) > 21 else "Não foi possível extrair os números"
     
     def get_serie(self, num_docto, id_solicitacao):
-        pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
-        caminho_pdf = rf"C:\Users\user\Documents\APs\nota_{num_docto}{id_solicitacao}.pdf"
-        imagens = convert_from_path(caminho_pdf)
-        texto_total = ""
-        for imagem in imagens:
-            texto = pytesseract.image_to_string(imagem)
-            if texto:
-                texto_total += texto + '\n'
-        serie_match = re.search(r's[ée]rie\s*[:\.\-\s]?\s*(\d+)', texto_total, re.IGNORECASE)
-        serie = serie_match.group(1) if serie_match else "Série não encontrada"
-        return serie
-    
-    def get_valor_icms(self, num_docto, id_solicitacao):
-        caminho_pdf = rf"C:\Users\user\Documents\APs\nota_{num_docto}{id_solicitacao}.pdf"
-        texto_total = ""    
-        with pdfplumber.open(caminho_pdf) as pdf:
-            for page in pdf.pages:
-                texto = page.extract_text()
+        if self.xml_existe == False:
+            pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+            caminho_pdf = rf"C:\Users\user\Documents\APs\nota_{num_docto}{id_solicitacao}.pdf"
+            imagens = convert_from_path(caminho_pdf)
+            texto_total = ""
+            for imagem in imagens:
+                texto = pytesseract.image_to_string(imagem)
                 if texto:
                     texto_total += texto + '\n'
-        patterns = [
-            r'(V\.|VALOR) TOTAL DOS PRODUTOS\S*\s+([\d\.,]+)\s+([\d\.,]+)',
-            r'(V\.|VALOR) TOTAL PRODUTOS\S*\s+([\d\.,]+)\s+([\d\.,]+)'      
-        ]
-        for pattern in patterns:
-            valor_icms_match = re.search(pattern, texto_total)
-            if valor_icms_match:
-                valor_string = valor_icms_match.group(3).replace('.', '').replace(',', '.')
-                valor_icms = float(valor_string)
-                return valor_icms
+            serie_match = re.search(r's[ée]rie\s*[:\.\-\s]?\s*(\d+)', texto_total, re.IGNORECASE)
+            serie = serie_match.group(1) if serie_match else "Série não encontrada"
+            return serie
         else:
-            return False
+            return None
+    
+    def get_valor_icms(self, num_docto, id_solicitacao):
+        if self.xml_existe == False:
+            caminho_pdf = rf"C:\Users\user\Documents\APs\nota_{num_docto}{id_solicitacao}.pdf"
+            texto_total = ""    
+            with pdfplumber.open(caminho_pdf) as pdf:
+                for page in pdf.pages:
+                    texto = page.extract_text()
+                    if texto:
+                        texto_total += texto + '\n'
+            patterns = [
+                r'(V\.|VALOR) TOTAL DOS PRODUTOS\S*\s+([\d\.,]+)\s+([\d\.,]+)',
+                r'(V\.|VALOR) TOTAL PRODUTOS\S*\s+([\d\.,]+)\s+([\d\.,]+)'      
+            ]
+            for pattern in patterns:
+                valor_icms_match = re.search(pattern, texto_total)
+                if valor_icms_match:
+                    valor_string = valor_icms_match.group(3).replace('.', '').replace(',', '.')
+                    valor_icms = float(valor_string)
+                    return valor_icms
+            else:
+                return False
     
     def convert_to_date(self, number):
         str_num = str(number)
@@ -1419,10 +1468,10 @@ class NbsRpa():
         # if tipo_docto != "NFE":
         #     return False, "Tipo de documento inválido"
         if tipo_docto == 'NFE':
-            if not chave_acesso:
+            if not chave_acesso and self.xml_existe == False:
                 return False, "chave de acesso de produto não encontrada"
         if tipo_docto == 'NFS':
-            if not cod_nfse:
+            if not cod_nfse and self.xml_existe == False:
                 return False, "chave de acesso de servico não encontrada"
         # if not serie:
         #     return False, "serie não encontrada"
@@ -1521,8 +1570,11 @@ class NbsRpa():
             else:
                 print(f"Success message sent successfully to chat_id {chat_id} on Telegram!")
 
-    def get_data_from_xml(self, chave_acesso):
-        path = rf'C:\Users\user\Downloads\{chave_acesso}.xml'
+    def get_data_from_xml(self, chave_acesso, num_docto, id_solicitacao):
+        if self.xml_existe == False:
+            path = rf'C:\Users\user\Downloads\{chave_acesso}.xml'
+        else:
+            path = rf'C:\Users\user\Downloads\xml_{num_docto}_{id_solicitacao}.xml'
         tree = ET.parse(path)
         root = tree.getroot()
 
@@ -1567,8 +1619,11 @@ class NbsRpa():
         results = [{'CFOP': key, 'vProd': str(value).replace('.', ','), 'CST': cst} for key, value in cfop_values.items()]
         return results
 
-    def get_data_emissao_from_xml(self, chave_acesso):
-        path = rf'C:\Users\user\Downloads\{chave_acesso}.xml'
+    def get_data_emissao_from_xml(self, chave_acesso, num_docto, id_solicitacao):
+        if self.xml_existe == False:
+            path = rf'C:\Users\user\Downloads\{chave_acesso}.xml'
+        else:
+            path = rf'C:\Users\user\Downloads\xml_{num_docto}_{id_solicitacao}.xml'
         tree = ET.parse(path)
         root = tree.getroot()
         ns = None
@@ -1590,7 +1645,7 @@ class NbsRpa():
     def remover_arquivo_nota(self, numerodoct, id_solicitacao):
         nome_arquivo = f"nota_{numerodoct}{id_solicitacao}.pdf"
         caminho_arquivo = os.path.join('C:\\Users\\user\\Documents\\APs', nome_arquivo)
-        
+    
         if os.path.exists(caminho_arquivo):
             try:
                 os.remove(caminho_arquivo)
@@ -1600,10 +1655,10 @@ class NbsRpa():
         else:
             print(f"Arquivo {nome_arquivo} não existe.")
 
-    def remover_arquivo_chave_acesso(self, chave_acesso):
-        nome_arquivo = f"{chave_acesso}.xml"
+    def remover_arquivo_xml(self, numerodoct, id_solicitacao):
+        nome_arquivo = f"xml_{numerodoct}_{id_solicitacao}.xml"
         caminho_arquivo = os.path.join('C:\\Users\\user\\Downloads', nome_arquivo)
-        
+    
         if os.path.exists(caminho_arquivo):
             try:
                 os.remove(caminho_arquivo)
@@ -1612,6 +1667,23 @@ class NbsRpa():
                 print(f"Erro ao tentar remover o arquivo {nome_arquivo}. Erro: {e}")
         else:
             print(f"Arquivo {nome_arquivo} não existe.")
+
+    # def remover_arquivo(self, chave_acesso, num_nota, num_solicitacao):
+    #     if self.xml_existe == False:
+    #         nome_arquivo = f"{chave_acesso}.xml"
+    #         caminho_arquivo = os.path.join('C:\\Users\\user\\Downloads', nome_arquivo)
+    #     else:
+    #         nome_arquivo = f"xml_{num_nota}_{num_solicitacao}.xml"
+    #         caminho_arquivo = os.path.join('C:\\Users\\user\\Downloads', nome_arquivo)
+            
+    #     if os.path.exists(caminho_arquivo):
+    #         try:
+    #             os.remove(caminho_arquivo)
+    #             print(f"Arquivo {nome_arquivo} removido com sucesso!")
+    #         except Exception as e:
+    #             print(f"Erro ao tentar remover o arquivo {nome_arquivo}. Erro: {e}")
+    #     else:
+    #         print(f"Arquivo {nome_arquivo} não existe.")
 
     def compare_values_rateio(self):
         title = "Entrada Diversas / Operação: 52-Entrada Diversas"
@@ -1633,8 +1705,11 @@ class NbsRpa():
         return valor_disponivel == valor_total
 
 
-    def get_serie_from_xml(self, chave_acesso):
-        path = rf'C:\Users\user\Downloads\{chave_acesso}.xml'
+    def get_serie_from_xml(self, chave_acesso, num_docto, id_solicitacao):
+        if self.xml_existe == False:
+            path = rf'C:\Users\user\Downloads\{chave_acesso}.xml'
+        else:
+            path = rf'C:\Users\user\Downloads\xml_{num_docto}_{id_solicitacao}.xml'
         tree = ET.parse(path)
         root = tree.getroot()
         ns = None
@@ -1650,54 +1725,38 @@ class NbsRpa():
         
         return serie
 
-
-    # def get_codigo_from_pdf(self, num_docto, id_solicitacao):
-    #     texto_total = self.extract_text_from_pdf_with_pdfplumber(num_docto, id_solicitacao)
-
-    #     # Padrão 1
-    #     codigos_pattern1 = (r'(?i)(Código\s*de\s*Verificação|Código\s*de\s*Validação|Autenticidade|Chave\s*Acesso|'
-    #                         r'Chave\s*de\s*Acesso|Chave\s*de\s*Acesso\s*daNFS-e)[^A-Z0-9]*?'
-    #                         r'(?:[A-Z]*\s*[A-Z]*\s*[A-Z]*\s*[A-Z]*\s*[A-Z]*\s*[A-Z]*\s*)?(\d{8,}\b)(?!.*000000)')
-
-    #     codigo_match1 = re.search(codigos_pattern1, texto_total)
-    #     codigo1 = codigo_match1.group(2) if codigo_match1 and "000000" not in codigo_match1.group(2) else None
-
-    #     if not codigo1:
-    #         # Padrão 2
-    #         codigos_pattern2 = (r'(?i)(?:Código\s*de\s*Verificação|Código\s*de\s*Validação|Autenticidade|Chave\s*Acesso|'
-    #                             r'Chave\s*de\s*Acesso|Chave\s*de\s*Acesso\s*daNFS-e)[\s\S]*?'
-    #                             r'((?:[A-Z]{8,})|(?:[A-Z0-9]{6,}(?:(?:[A-Z][A-Z0-9]*[0-9])|(?:[0-9][A-Z0-9]*[A-Z]))))(?!.*000000)\b')
-
-    #         codigo_match2 = re.search(codigos_pattern2, texto_total)
-    #         codigo2 = codigo_match2.group(1) if codigo_match2 and "000000" not in codigo_match2.group(1) else None
-    #         return codigo2
-
-    #     return codigo1
-
     def get_codigo_from_pdf(self, num_docto, id_solicitacao):
-        texto_total = self.extract_text_from_pdf_with_pdfplumber(num_docto, id_solicitacao)
-        # print(texto_total)
+        if self.xml_existe == False:
+            texto_total = self.extract_text_from_pdf_with_pdfplumber(num_docto, id_solicitacao)
+            # print(texto_total)
 
-        # Novo padrão para "Chave de Acesso da NFS-e"
-        chave_acesso_pattern = r'ChavedeAcessodaNFS-e\s*(\d{8,})'
-        chave_acesso_match = re.search(chave_acesso_pattern, texto_total)
-        if chave_acesso_match:
-            return chave_acesso_match.group(1)
+            # Padrão para "Chave de Acesso da NFS-e"
+            chave_acesso_pattern = r'ChavedeAcessodaNFS-e\s*(\d{8,})'
+            chave_acesso_match = re.search(chave_acesso_pattern, texto_total)
+            if chave_acesso_match:
+                return chave_acesso_match.group(1)
 
-        codigos_pattern1 = (r'(?i)(Código\s*de\s*Verificação|Código\s*de\s*Validação|Autenticidade|Chave\s*Acesso|'
-                            r'Chave\s*de\s*Acesso|Chave\s*de\s*Acesso\s*daNFS-e)[^A-Z0-9]*?'
-                            r'(?:[A-Z]*\s*[A-Z]*\s*[A-Z]*\s*[A-Z]*\s*[A-Z]*\s*[A-Z]*\s*)?(\d{8,}\b)(?!.*000000)')
-        codigo_match1 = re.search(codigos_pattern1, texto_total)
-        codigo1 = codigo_match1.group(2) if codigo_match1 and "000000" not in codigo_match1.group(2) else None
+            # Padrão para diversos códigos
+            codigos_pattern1 = (r'(?i)(Código\s*de\s*Verificação|Código\s*de\s*Validação|Autenticidade|Chave\s*Acesso|'
+                                r'Chave\s*de\s*Acesso|Chave\s*de\s*Acesso\s*daNFS-e)[^A-Z0-9]*?'
+                                r'(?:[A-Z]*\s*[A-Z]*\s*[A-Z]*\s*[A-Z]*\s*[A-Z]*\s*[A-Z]*\s*)?(\d{8,}\b)(?!.*000000)')
+            codigo_match1 = re.search(codigos_pattern1, texto_total)
+            if codigo_match1 and "000000" not in codigo_match1.group(2):
+                return codigo_match1.group(2)
 
-        if not codigo1:
+            # Padrão para "Código de autenticação da NFSe"
             codigos_pattern5 = (r'(?i)Código de autenticação da NFSe:\s*([^\s]+)')
             codigo_match5 = re.search(codigos_pattern5, texto_total)
             if codigo_match5:
-                codigo5 = codigo_match5.group(1)
-                return codigo5
+                return codigo_match5.group(1)
 
-        if not codigo1:
+            # Padrão para "Autenticidade"
+            autenticidade_pattern = r'Autenticidade\s*(?:[\s\S]*?)(\d{10,})'
+            autenticidade_match = re.search(autenticidade_pattern, texto_total)
+            if autenticidade_match:
+                return autenticidade_match.group(1)
+
+            # Padrão para "Identificador"
             codigos_pattern4 = (r'(?i)Identificador[\s\S]*?((?:\d{4}\s){9}\d{4})')
             codigo_match4 = re.search(codigos_pattern4, texto_total)
             if codigo_match4:
@@ -1705,34 +1764,71 @@ class NbsRpa():
                 if "000000" not in codigo4:
                     return codigo4
 
-        return None  # Retorna None se nenhum código for encontrado
+            return None  # Retorna None se nenhum código for encontrado
+
+    # def get_codigo_from_pdf(self, num_docto, id_solicitacao):
+    #     if self.xml_existe == False:
+    #         texto_total = self.extract_text_from_pdf_with_pdfplumber(num_docto, id_solicitacao)
+    #         # print(texto_total)
+
+    #         # Novo padrão para "Chave de Acesso da NFS-e"
+    #         chave_acesso_pattern = r'ChavedeAcessodaNFS-e\s*(\d{8,})'
+    #         chave_acesso_match = re.search(chave_acesso_pattern, texto_total)
+    #         if chave_acesso_match:
+    #             return chave_acesso_match.group(1)
+
+    #         codigos_pattern1 = (r'(?i)(Código\s*de\s*Verificação|Código\s*de\s*Validação|Autenticidade|Chave\s*Acesso|'
+    #                             r'Chave\s*de\s*Acesso|Chave\s*de\s*Acesso\s*daNFS-e)[^A-Z0-9]*?'
+    #                             r'(?:[A-Z]*\s*[A-Z]*\s*[A-Z]*\s*[A-Z]*\s*[A-Z]*\s*[A-Z]*\s*)?(\d{8,}\b)(?!.*000000)')
+    #         codigo_match1 = re.search(codigos_pattern1, texto_total)
+    #         codigo1 = codigo_match1.group(2) if codigo_match1 and "000000" not in codigo_match1.group(2) else None
+
+    #         if not codigo1:
+    #             codigos_pattern5 = (r'(?i)Código de autenticação da NFSe:\s*([^\s]+)')
+    #             codigo_match5 = re.search(codigos_pattern5, texto_total)
+    #             if codigo_match5:
+    #                 codigo5 = codigo_match5.group(1)
+    #                 return codigo5
+
+    #         if not codigo1:
+    #             codigos_pattern4 = (r'(?i)Identificador[\s\S]*?((?:\d{4}\s){9}\d{4})')
+    #             codigo_match4 = re.search(codigos_pattern4, texto_total)
+    #             if codigo_match4:
+    #                 codigo4 = codigo_match4.group(1).replace(' ', '')  # remove os espaços do código capturado
+    #                 if "000000" not in codigo4:
+    #                     return codigo4
+
+    #         return None  # Retorna None se nenhum código for encontrado
+    #     else:
+    #         return None
         
     def get_service_code(self, num_docto, id_solicitacao):
-        texto_total = self.extract_text_from_pdf_with_pdfplumber(num_docto, id_solicitacao) 
-        # print(texto_total) 
-        
-        pattern1 = r'C[oó]digodeTributa[cç][aã]oNacional\s*[^0-9]*([1-9]\d{0,1}\.\d{1,2})'
-        pattern2 = r'(c[oó]dig(?:o|os)?\s*(?:de|dos)?\s*servi[cç][oó]s|atividade\s*do\s*munic[ií]pio|c[oó]digo\s*de\s*tributa[cç][aã]o\s*nacional)\s*[^0-9]*\s*(\d{1,2}\.\d{1,2}(?:\.\d{1,2})?)'
-        pattern3 = r'Atividade:\s*[^0-9]*(\d{1,5})'  # Procura pelo termo "Atividade:" seguido por qualquer número de caracteres não numéricos e então um número com até 5 dígitos.
-        
-        match1 = re.search(pattern1, texto_total, re.IGNORECASE)
-        
-        if match1:
-            code = match1.group(1).replace('.', '')
-            return code[:4]
-        
-        match2 = re.search(pattern2, texto_total, re.IGNORECASE)
-        
-        if match2:
-            code = match2.group(1).replace('.', '')
-            return code[:4]
-        
-        match3 = re.search(pattern3, texto_total, re.IGNORECASE)
-        
-        if match3:
-            return match3.group(1)[:4]
+        if self.xml_existe == False:
+            texto_total = self.extract_text_from_pdf_with_pdfplumber(num_docto, id_solicitacao) 
+            # print(texto_total) 
+            
+            pattern1 = r'C[oó]digodeTributa[cç][aã]oNacional\s*[^0-9]*([1-9]\d{0,1}\.\d{1,2})'
+            pattern2 = r'(c[oó]dig(?:o|os)?\s*(?:de|dos)?\s*servi[cç][oó]s|atividade\s*do\s*munic[ií]pio|c[oó]digo\s*de\s*tributa[cç][aã]o\s*nacional)\s*[^0-9]*\s*(\d{1,2}\.\d{1,2}(?:\.\d{1,2})?)'
+            pattern3 = r'Atividade:\s*[^0-9]*(\d{1,5})'  # Procura pelo termo "Atividade:" seguido por qualquer número de caracteres não numéricos e então um número com até 5 dígitos.
+            
+            match1 = re.search(pattern1, texto_total, re.IGNORECASE)
+            
+            if match1:
+                code = match1.group(1).replace('.', '')
+                return code[:4]
+            
+            match2 = re.search(pattern2, texto_total, re.IGNORECASE)
+            
+            if match2:
+                code = match2.group(1).replace('.', '')
+                return code[:4]
+            
+            match3 = re.search(pattern3, texto_total, re.IGNORECASE)
+            
+            if match3:
+                return match3.group(1)[:4]
 
-        return None
+            return None
     
     def consulta_cidade_empresa(self, empresa: str) -> str:
         city_map = {
@@ -1746,165 +1842,167 @@ class NbsRpa():
         return city_map.get(city, city)
 
     def get_aliquota(self, num_docto, id_solicitacao):
-        texto_total = self.extract_text_from_pdf_with_pdfplumber(num_docto, id_solicitacao) 
-        # print(texto_total)
-        aliquota_value = None
-        # Lages
-        # Tentativa 1: Após "Base de cálculo (%)", pegue o número após o 'x'
-        try:
-            pattern1 = r'Base de cálculo \(%\).*?\d+(?:,\d{1,2})?x(\d+(?:,\d{1,2})?)='
-            match = re.search(pattern1, texto_total, re.IGNORECASE | re.DOTALL)
-            if match:
-                aliquota_value = match.group(1)
-        except:
-            pass
-
-        # Criciuma
-        # Tentativa 2: Após "Alíquota ISS", pegue o primeiro valor com % e retorne as duas primeiras casas após a vírgula
-        if not aliquota_value:
+        if self.xml_existe == False:
+            texto_total = self.extract_text_from_pdf_with_pdfplumber(num_docto, id_solicitacao) 
+            # print(texto_total)
+            aliquota_value = None
+            # Lages
+            # Tentativa 1: Após "Base de cálculo (%)", pegue o número após o 'x'
             try:
-                pattern2 = r'Alíquota ISS.*?(\d+,\d{1,4})\s?%'
-                match = re.search(pattern2, texto_total, re.IGNORECASE | re.DOTALL)
-                if match:
-                    full_value = match.group(1)
-                    main, decimal = full_value.split(',')
-                    decimal = decimal[:4] # limitar em 4 casas decimais
-                    aliquota_value = f"{main},{decimal}"
-            except:
-                pass
-        # Apos aliquota ISS, pegue o primeiro valor que tem mais de 4 casas decimais apos a virgula e formate para 2 casas
-        if not aliquota_value:
-            try:
-                pattern5 = r'Alíquota\s+ISS.*?([\d\.]{1,},\d{5,})'
-                match = re.search(pattern5, texto_total, re.IGNORECASE | re.DOTALL)
-                if match:
-                    raw_value = match.group(1)
-                    # Convertendo a string para um float e formatando
-                    formatted_value = "{:.2f}".format(float(raw_value.replace(',', '.'))).replace('.', ',')
-                    aliquota_value = formatted_value
-                    if aliquota_value != "0,00":
-                        return aliquota_value
-            except:
-                pass
-
-            # Tentativa 4: Captura um valor após a string "Aliquota=" e transforma em formato 0,00
-        if not aliquota_value:
-            try:
-                pattern4 = r'Aliquota=(\d+)'  # este regex irá pegar um ou mais dígitos após "Aliquota="
-                match = re.search(pattern4, texto_total)
-                if match:
-                    aliquota_int = match.group(1)
-                    aliquota_value = "{:.2f}".format(float(aliquota_int)).replace(".", ",")
-                    if aliquota_value != "0,00":
-                        return aliquota_value
-            except Exception as e:
-                print(f"Erro ao processar Aliquota: {e}")
-
-        if not aliquota_value:
-            try:
-                pattern6 = r'Alíquota\s+\(%\).*?([\d\.]{1,},\d{3,})'
-                match = re.search(pattern6, texto_total, re.IGNORECASE | re.DOTALL)
-                if match:
-                    raw_value = match.group(1)
-                    # Convertendo a string para um float e formatando
-                    formatted_value = "{:.2f}".format(float(raw_value.replace(',', '.'))).replace('.', ',')
-                    aliquota_value = formatted_value
-                    if aliquota_value != "0,00":
-                        return aliquota_value
-                    
-            except:
-                pass
-        
-        if not aliquota_value:
-            try:
-                pattern7 = r'Base de Cálculo.*?\n.*?(\d+,\d{3,})%'
-                match = re.search(pattern7, texto_total, re.IGNORECASE | re.DOTALL)
-                if match:
-                    full_value = match.group(1)
-                    main, decimal = full_value.split(',')
-                    decimal = decimal[:4]  # Limitar para 4 casas decimais
-                    formatted_value = f"{main},{decimal}"
-                    return formatted_value
-            except:
-                pass
-
-        # Após "Alíquota", pegue o primeiro número que tem 3 ou mais casas após a vírgula
-        if not aliquota_value:
-            try:
-                # pattern8 = r'Alíquota.*?(\b\d\.\d{3,4}\b)'
-                pattern8 = r'Alíquota\s*(\b\d\.\d{3,4}\b)(?!\s*/)'
-                match = re.search(pattern8, texto_total, re.IGNORECASE | re.DOTALL)
-                if match:
-                    aliquota_value = match.group(1).replace('.', ',')  # Substitua o ponto por uma vírgula
-            except:
-                pass
-
-        if not aliquota_value:
-            try:
-                pattern9 = r'Alíquota \(%\).*?(\d+,\d{1,4})\s?'
-                match = re.search(pattern9, texto_total, re.IGNORECASE | re.DOTALL)
-
+                pattern1 = r'Base de cálculo \(%\).*?\d+(?:,\d{1,2})?x(\d+(?:,\d{1,2})?)='
+                match = re.search(pattern1, texto_total, re.IGNORECASE | re.DOTALL)
                 if match:
                     aliquota_value = match.group(1)
-                    return aliquota_value # Deve imprimir 2,00
             except:
                 pass
 
-        if not aliquota_value:
-            try:
-                pattern10 = r'Alíquota\s+Situação[\s\S]*?(\d+%)'
-                match = re.search(pattern10, texto_total, re.IGNORECASE | re.DOTALL)
+            # Criciuma
+            # Tentativa 2: Após "Alíquota ISS", pegue o primeiro valor com % e retorne as duas primeiras casas após a vírgula
+            if not aliquota_value:
+                try:
+                    pattern2 = r'Alíquota ISS.*?(\d+,\d{1,4})\s?%'
+                    match = re.search(pattern2, texto_total, re.IGNORECASE | re.DOTALL)
+                    if match:
+                        full_value = match.group(1)
+                        main, decimal = full_value.split(',')
+                        decimal = decimal[:4] # limitar em 4 casas decimais
+                        aliquota_value = f"{main},{decimal}"
+                except:
+                    pass
+            # Apos aliquota ISS, pegue o primeiro valor que tem mais de 4 casas decimais apos a virgula e formate para 2 casas
+            if not aliquota_value:
+                try:
+                    pattern5 = r'Alíquota\s+ISS.*?([\d\.]{1,},\d{5,})'
+                    match = re.search(pattern5, texto_total, re.IGNORECASE | re.DOTALL)
+                    if match:
+                        raw_value = match.group(1)
+                        # Convertendo a string para um float e formatando
+                        formatted_value = "{:.2f}".format(float(raw_value.replace(',', '.'))).replace('.', ',')
+                        aliquota_value = formatted_value
+                        if aliquota_value != "0,00":
+                            return aliquota_value
+                except:
+                    pass
 
-                if match:
-                    aliquota_value = match.group(1)
-                    return aliquota_value 
-            except:
-                pass
+                # Tentativa 4: Captura um valor após a string "Aliquota=" e transforma em formato 0,00
+            if not aliquota_value:
+                try:
+                    pattern4 = r'Aliquota=(\d+)'  # este regex irá pegar um ou mais dígitos após "Aliquota="
+                    match = re.search(pattern4, texto_total)
+                    if match:
+                        aliquota_int = match.group(1)
+                        aliquota_value = "{:.2f}".format(float(aliquota_int)).replace(".", ",")
+                        if aliquota_value != "0,00":
+                            return aliquota_value
+                except Exception as e:
+                    print(f"Erro ao processar Aliquota: {e}")
 
-        if not aliquota_value:
-            try:
-                pattern11 = r'Aliquota da Atividade:\s*([\d,]+)'
-                match = re.search(pattern11, texto_total, re.IGNORECASE)
+            if not aliquota_value:
+                try:
+                    pattern6 = r'Alíquota\s+\(%\).*?([\d\.]{1,},\d{3,})'
+                    match = re.search(pattern6, texto_total, re.IGNORECASE | re.DOTALL)
+                    if match:
+                        raw_value = match.group(1)
+                        # Convertendo a string para um float e formatando
+                        formatted_value = "{:.2f}".format(float(raw_value.replace(',', '.'))).replace('.', ',')
+                        aliquota_value = formatted_value
+                        if aliquota_value != "0,00":
+                            return aliquota_value
+                        
+                except:
+                    pass
+            
+            if not aliquota_value:
+                try:
+                    pattern7 = r'Base de Cálculo.*?\n.*?(\d+,\d{3,})%'
+                    match = re.search(pattern7, texto_total, re.IGNORECASE | re.DOTALL)
+                    if match:
+                        full_value = match.group(1)
+                        main, decimal = full_value.split(',')
+                        decimal = decimal[:4]  # Limitar para 4 casas decimais
+                        formatted_value = f"{main},{decimal}"
+                        return formatted_value
+                except:
+                    pass
 
-                if match:
-                    aliquota_value = match.group(1)
-                    return aliquota_value
-            except:
-                pass
+            # Após "Alíquota", pegue o primeiro número que tem 3 ou mais casas após a vírgula
+            if not aliquota_value:
+                try:
+                    # pattern8 = r'Alíquota.*?(\b\d\.\d{3,4}\b)'
+                    pattern8 = r'Alíquota\s*(\b\d\.\d{3,4}\b)(?!\s*/)'
+                    match = re.search(pattern8, texto_total, re.IGNORECASE | re.DOTALL)
+                    if match:
+                        aliquota_value = match.group(1).replace('.', ',')  # Substitua o ponto por uma vírgula
+                except:
+                    pass
 
-        # Brasilia
-        # Tentativa 3: Pegar o primeiro valor numérico que tem tanto uma vírgula `,` quanto um ponto `.`
-        if not aliquota_value:
-            try:
-                pattern3 = r'Alíquota.*?(\d{1,2},\d{1,2}\.)'
-                match = re.search(pattern3, texto_total, re.DOTALL)
-                if match:
-                    # Remover o ponto ao final
-                    aliquota_value = match.group(1)[:-1]
-            except:
-                pass
+            if not aliquota_value:
+                try:
+                    pattern9 = r'Alíquota \(%\).*?(\d+,\d{1,4})\s?'
+                    match = re.search(pattern9, texto_total, re.IGNORECASE | re.DOTALL)
 
-        if aliquota_value and aliquota_value != "0,00":
-            return aliquota_value
-        
-        return None
+                    if match:
+                        aliquota_value = match.group(1)
+                        return aliquota_value # Deve imprimir 2,00
+                except:
+                    pass
+
+            if not aliquota_value:
+                try:
+                    pattern10 = r'Alíquota\s+Situação[\s\S]*?(\d+%)'
+                    match = re.search(pattern10, texto_total, re.IGNORECASE | re.DOTALL)
+
+                    if match:
+                        aliquota_value = match.group(1)
+                        return aliquota_value 
+                except:
+                    pass
+
+            if not aliquota_value:
+                try:
+                    pattern11 = r'Aliquota da Atividade:\s*([\d,]+)'
+                    match = re.search(pattern11, texto_total, re.IGNORECASE)
+
+                    if match:
+                        aliquota_value = match.group(1)
+                        return aliquota_value
+                except:
+                    pass
+
+            # Brasilia
+            # Tentativa 3: Pegar o primeiro valor numérico que tem tanto uma vírgula `,` quanto um ponto `.`
+            if not aliquota_value:
+                try:
+                    pattern3 = r'Alíquota.*?(\d{1,2},\d{1,2}\.)'
+                    match = re.search(pattern3, texto_total, re.DOTALL)
+                    if match:
+                        # Remover o ponto ao final
+                        aliquota_value = match.group(1)[:-1]
+                except:
+                    pass
+
+            if aliquota_value and aliquota_value != "0,00":
+                return aliquota_value
+            
+            return None
 
 
     def extract_text_from_pdf_with_pdfplumber(self, num_docto, id_solicitacao):
-        caminho_pdf = rf"C:\Users\user\Documents\APs\nota_{num_docto}{id_solicitacao}.pdf"
-        
-        texto_total = ""
-        try:
-            with pdfplumber.open(caminho_pdf) as pdf:
-                for pagina in pdf.pages:
-                    texto = pagina.extract_text()
-                    if texto:
-                        texto_total += texto + '\n'
-        except Exception as e:
-            print(f"Erro ao ler o PDF: {e}")
-            return None
-        
-        return texto_total
+        if self.xml_existe == False:
+            caminho_pdf = rf"C:\Users\user\Documents\APs\nota_{num_docto}{id_solicitacao}.pdf"
+            
+            texto_total = ""
+            try:
+                with pdfplumber.open(caminho_pdf) as pdf:
+                    for pagina in pdf.pages:
+                        texto = pagina.extract_text()
+                        if texto:
+                            texto_total += texto + '\n'
+            except Exception as e:
+                print(f"Erro ao ler o PDF: {e}")
+                return None
+            
+            return texto_total
     
     def extract_access_key_from_image(self, num_docto, id_solicitacao):
         texto_total = self.extract_text_from_pdf(num_docto, id_solicitacao)
@@ -1922,19 +2020,6 @@ class NbsRpa():
             pass
 
     def extract_aliquota_from_image(self, num_docto, id_solicitacao):
-        # texto_total = self.extract_text_from_pdf(num_docto, id_solicitacao)
-        # # print(texto_total)
-        # # sp/rj
-        # try:
-        #     pattern = r'(\d{1,2},\d{2}\%)'
-        #     match = re.search(pattern, texto_total)
-        #     if match is not None:
-        #         aliquota = match.group(1)
-        #         if aliquota == '0,00%':
-        #             return None
-        #         return aliquota
-        # except:
-        #     pass
         texto_total = self.extract_text_from_pdf(num_docto, id_solicitacao)
         # print(texto_total)
         
@@ -2003,6 +2088,149 @@ class NbsRpa():
         texto_copiado = texto_copiado.strip()
 
         return texto_copiado
+    
+    
+    def get_verification_code_from_xml_nfs(self, num_nota, id_solicitacao): 
+        path = rf'C:\Users\user\Downloads\xml_{num_nota}_{id_solicitacao}.xml'
+        
+        try:
+            # Tentativa de encontrar 'CodigoVerificacao'
+            tree = ET.parse(path)
+            root = tree.getroot()
+            verification_code_elem = root.find('.//CodigoVerificacao')
+            if verification_code_elem is not None and verification_code_elem.text:
+                return verification_code_elem.text
+        except ET.ParseError as e:
+            print(f"Erro ao analisar 'CodigoVerificacao': {e}")
+        except Exception as e:
+            print(f"Erro desconhecido ao processar 'CodigoVerificacao': {e}")
+
+        try:
+            # Tentativa de extrair o 'Id' do 'infNFSe' com namespace
+            tree = ET.parse(path)
+            root = tree.getroot()
+            namespaces = {'ns': 'http://www.sped.fazenda.gov.br/nfse'}
+            infNFSe_elem = root.find('.//ns:infNFSe', namespaces)
+            if infNFSe_elem is not None and 'Id' in infNFSe_elem.attrib:
+                id_value = infNFSe_elem.attrib['Id']
+                numeric_id = ''.join(filter(str.isdigit, id_value))
+                return numeric_id if numeric_id else None
+        except ET.ParseError as e:
+            print(f"Erro ao analisar 'infNFSe': {e}")
+        except Exception as e:
+            print(f"Erro desconhecido ao processar 'infNFSe': {e}")
+
+        return None
+
+
+    def get_aliquota_from_xml_nfs(self, num_nota, id_solicitacao):
+        path = rf'C:\Users\user\Downloads\xml_{num_nota}_{id_solicitacao}.xml'
+        
+        tree = ET.parse(path)
+        root = tree.getroot()
+        
+        aliquota_elem = root.find('.//Aliquota')
+        
+        if aliquota_elem is not None and aliquota_elem.text:
+            # Substitui o ponto por vírgula
+            return aliquota_elem.text.replace('.', ',')
+        else:
+            return None
+
+
+    def get_item_lista_servico_from_xml_nfs(self, num_nota, id_solicitacao):
+        path = rf'C:\Users\user\Downloads\xml_{num_nota}_{id_solicitacao}.xml'
+
+        try:
+            # Tentativa de encontrar 'ItemListaServico'
+            tree = ET.parse(path)
+            root = tree.getroot()
+            
+            item_lista_servico_elem = root.find('.//ItemListaServico')
+            if item_lista_servico_elem is not None and item_lista_servico_elem.text:
+                return str(int(item_lista_servico_elem.text))[:4]
+        except ET.ParseError:
+            print("Erro ao analisar 'ItemListaServico'.")
+        except Exception as e:
+            print(f"Erro desconhecido ao processar 'ItemListaServico': {e}")
+
+        try:
+            # Tentativa de encontrar 'cTribNac'
+            tree = ET.parse(path)
+            root = tree.getroot()
+            namespaces = {'ns': 'http://www.sped.fazenda.gov.br/nfse'}
+
+            cTribNac_elem = root.find('.//ns:cTribNac', namespaces)
+            if cTribNac_elem is not None and cTribNac_elem.text:
+                return cTribNac_elem.text[:4]
+        except ET.ParseError:
+            print("Erro ao analisar 'cTribNac'.")
+        except Exception as e:
+            print(f"Erro desconhecido ao processar 'cTribNac': {e}")
+
+        return None
+    
+
+    # def corrigir_xml(self, num_docto, id_solicitacao):
+    #     # Define o caminho do arquivo na pasta de Downloads
+    #     download_folder = str(Path.home() / "Downloads")
+    #     file_name = f"xml_{num_docto}_{id_solicitacao}.xml"
+    #     path = os.path.join(download_folder, file_name)
+
+    #     try:
+    #         with open(path, 'r', encoding='utf-8') as file:
+    #             content = file.read()
+            
+    #         # Substitui '&' por '&amp;' se não for parte de uma entidade XML válida
+    #         content = content.replace('&', '&amp;')
+            
+    #         with open(path, 'w', encoding='utf-8') as file:
+    #             file.write(content)
+            
+    #         print("Arquivo corrigido com sucesso.")
+    #     except Exception as e:
+    #         print(f"Erro ao corrigir o arquivo: {e}")
+
+    def minimize(self):
+        pyautogui.hotkey("win", "m")
+
+    def focus_nbs(self):
+        try:
+            title = "Barra de Tarefas"
+            try:
+                app = Application(backend='uia').connect(title=title)
+            except ElementNotFoundError:
+                print("Não foi possível se conectar com a janela Barra de Tarefas")
+                return 
+            janela = app[title]
+            focar_nbs = janela.child_window(title="SisFin - 1 executando o windows")
+            try:
+                self.wait_until_interactive(focar_nbs)
+            except TimeoutError as e:
+                print(str(e))
+                return
+            focar_nbs.click_input()
+        except:
+            print("sisfin nao esta aberto")
+
+
+    def check_if_file_exists_in_downloads(self, num_nota, num_solicitacao, download_folder=None):
+        if download_folder is None:
+            download_folder = str(Path.home() / "Downloads")
+
+        expected_file_name = f"xml_{num_nota}_{num_solicitacao}.xml"
+        expected_file_path = os.path.join(download_folder, expected_file_name)
+
+        # Verificar se o arquivo existe
+        if not os.path.isfile(expected_file_path):
+            return False
+
+        try:
+            # Tentar parsear o arquivo XML para verificar se está bem formado
+            ET.parse(expected_file_path)
+            return True  # O arquivo existe e está bem formado
+        except ET.ParseError:
+            return False  # O arquivo existe, mas não está bem formado
 
     def funcao_main(self):
         registros = database.consultar_dados_cadastro()
@@ -2027,19 +2255,25 @@ class NbsRpa():
                 vencimento_value = notas_fiscais[0][4]
             time.sleep(1)
             self.remover_arquivo_nota(numerodocto, id_solicitacao)
+            self.remover_arquivo_xml(numerodocto, id_solicitacao)
             time.sleep(1)
             wise_instance = Wise()
             wise_instance.get_nf_values(numerodocto, id_solicitacao)
-            time.sleep(2)
-            wise_instance.save_as(numerodocto, id_solicitacao)
-            google_focus = r"C:\Users\user\Documents\RPA_Project\imagens\google_focus.PNG"
-            time.sleep(1)
-            self.click_specific_button(google_focus)
             time.sleep(3)
-            wise_instance.fechar_aba()
-            time.sleep(1)
+            
+            # time.sleep(2)
+            # wise_instance.save_as(numerodocto, id_solicitacao)
+            # google_focus = r"C:\Users\user\Documents\RPA_Project\imagens\google_focus.PNG"
+            # time.sleep(1)
+            # self.click_specific_button(google_focus)
+
+            wise_instance.rename_last_downloaded_file(numerodocto, id_solicitacao)
+            time.sleep(2)
+            self.xml_existe = self.check_if_file_exists_in_downloads(numerodocto, id_solicitacao)
+            if self.xml_existe == True:
+                self.minimize()
             chave_de_acesso_value = self.get_chave_acesso(numerodocto, id_solicitacao)
-            print(chave_de_acesso_value)
+            time.sleep(1)
             cod_nfse = self.get_codigo_from_pdf(numerodocto, id_solicitacao)
             serie_nota = self.get_serie(numerodocto, id_solicitacao)
             pdf_inteiro = self.extract_text_from_pdf(numerodocto, id_solicitacao)
@@ -2052,14 +2286,17 @@ class NbsRpa():
             if success:
                 # try:
                 if tipo_docto_value == 'NFE':
-                    wise_instance.get_xml(chave_de_acesso_value)
-                    time.sleep(2)
-                self.back_to_nbs()
+                    if self.xml_existe == False:
+                        wise_instance.get_xml(chave_de_acesso_value)
+                        time.sleep(2)
+                # self.back_to_nbs()
                 time.sleep(2)
                 # wise_instance.fechar_aba()
                 # if success:
                     # try:
                 empresa_atual = row[2]
+                self.focus_nbs()
+                time.sleep(2)
                 if empresa_atual != empresa_anterior:
                     self.close_aplications_end()
                     time.sleep(3)
@@ -2073,7 +2310,7 @@ class NbsRpa():
                 self.janela_entrada(tipo_docto_value)
                 if tipo_docto_value == 'NFE':
                     self.importar_xml()
-                    self.abrir_xml(chave_de_acesso_value)
+                    self.abrir_xml(chave_de_acesso_value, numerodocto, id_solicitacao)
                 cnpj = row[1]
                 contab_descricao_value = row[6]
                 cod_contab_value = row[7]
