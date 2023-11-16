@@ -2237,6 +2237,7 @@ class NbsRpa():
         empresa_anterior = None
         for row in registros:
             # try:
+            self.existe_xml = False
             id_empresa = row[18]
             id_solicitacao = row[0]
             tipo_pagamento_value = row[5]
