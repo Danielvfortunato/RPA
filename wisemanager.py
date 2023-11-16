@@ -11,6 +11,9 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support.select import Select
 import pygetwindow as gw
 from selenium.webdriver.support import expected_conditions as EC
+import os
+from pathlib import Path
+import xml.etree.ElementTree as ET
 
 class Wise():
     def __init__(self):
@@ -162,7 +165,7 @@ class Wise():
             todos_preenchidos = all(controle.get_attribute('value') != "" for controle in controles if controle.is_displayed())
             if todos_preenchidos:
                 botao_confirmar = WebDriverWait(self.driver, 60).until(EC.element_to_be_clickable((By.XPATH, "//button[contains(@title, 'Confirma Lançamento no ERP')]")))
-                self.driver.execute_script("arguments[0].scrollIntoView();", botao_confirmar)
+                # self.driver.execute_script("arguments[0].scrollIntoView();", botao_confirmar)
                 pyautogui.scroll(1000)
                 botao_confirmar.click()
                 time.sleep(3)
@@ -204,8 +207,19 @@ class Wise():
         open_detail = WebDriverWait(self.driver, 60).until(EC.presence_of_element_located((By.XPATH, "//button[contains(@ng-click, 'abreDetalheSolicitacao')]")))
         open_detail.click()
         time.sleep(2)
-        numeros_docto = WebDriverWait(self.driver, 60).until(EC.presence_of_all_elements_located((By.NAME, "numeroDocto")))
         link_elements = WebDriverWait(self.driver, 60).until(EC.presence_of_all_elements_located((By.XPATH, "//a[contains(@ng-show, '.pdf') and contains(translate(@href, 'PDF', 'pdf'), '.pdf') and contains(@href, 'anexo/solicitacaoGasto')]")))
+        numeros_docto = WebDriverWait(self.driver, 60).until(
+            EC.presence_of_all_elements_located((By.NAME, "numeroDocto"))
+        )
+        # pyautogui.scroll(-1000) 
+        download_buttons = WebDriverWait(self.driver, 60).until(
+            EC.presence_of_all_elements_located((
+                By.XPATH, 
+                "//a[contains(@href, 'anexo/solicitacaoGasto') and @ng-show=\"anexoSolicitacaoGasto.nomeArquivo.endsWith('.xml')\"]"
+            ))
+        )
+        download_buttons_visible = any(button.is_displayed() for button in download_buttons)
+        # self.driver.execute_script("arguments[0].scrollIntoView();", download_buttons_visible)
         for numero_docto, link_element in zip(numeros_docto, link_elements):
             valor_docto = numero_docto.get_attribute('value')
             if str(valor_docto) == str(num_docto) and link_element.is_displayed():
@@ -214,6 +228,25 @@ class Wise():
         time.sleep(4)
         download = r"C:\Users\user\Documents\RPA_Project\imagens\download.PNG" 
         self.click_specific_button_wise(download)
+        time.sleep(2)
+        self.save_as(num_docto, id_solicitacao)
+        if download_buttons_visible:
+            for numero_docto, download_button in zip(numeros_docto, download_buttons):
+                valor_docto = numero_docto.get_attribute('value')
+                if str(valor_docto) == str(num_docto) and download_button.is_displayed():
+                    download_button.click()
+                    break
+        # else:
+            # for numero_docto, link_element in zip(numeros_docto, link_elements):
+            #     valor_docto = numero_docto.get_attribute('value')
+            #     if str(valor_docto) == str(num_docto) and link_element.is_displayed():
+            #         link_element.click()
+            #         break
+            #     time.sleep(4)
+            # download = r"C:\Users\user\Documents\RPA_Project\imagens\download.PNG" 
+            # self.click_specific_button_wise(download)
+            # time.sleep(2)
+            # self.save_as(num_docto, id_solicitacao)
 
     def save_as(self, num_docto, id_solicitacao):
         title = "Salvar como"
@@ -235,8 +268,14 @@ class Wise():
         self.type_slowly(file_name, f"nota_{num_docto}{id_solicitacao}")
         time.sleep(1)
         pyautogui.press('enter')
+        time.sleep(2)
+        self.fechar_aba()
     
     def fechar_aba(self):
+        time.sleep(1)
+        google_focus = r"C:\Users\user\Documents\RPA_Project\imagens\google_focus.PNG"
+        time.sleep(1)
+        self.click_specific_button_wise(google_focus)
         pyautogui.hotkey('ctrl','w')
 
     def type_slowly(self, element, text, delay=0.3):
@@ -291,9 +330,45 @@ class Wise():
             botao_download.click()
 
 
+    def rename_last_downloaded_file(self, num_nota, num_solicitacao, download_folder=None):
+        if download_folder is None:
+            download_folder = str(Path.home() / "Downloads")
+
+        last_downloaded_file = max([f for f in os.scandir(download_folder)], key=lambda x: x.stat().st_mtime)
+
+        new_name = f"xml_{num_nota}_{num_solicitacao}.xml"
+
+        new_file_path = os.path.join(download_folder, new_name)
+
+        os.rename(last_downloaded_file.path, new_file_path)
+
+        print(f"Arquivo renomeado para: {new_file_path}")
+
+
+
+    # def check_if_file_exists_in_downloads(self, num_nota, num_solicitacao, download_folder=None):
+    #     if download_folder is None:
+    #         download_folder = str(Path.home() / "Downloads")
+
+    #     expected_file_name = f"xml_{num_nota}_{num_solicitacao}.xml"
+    #     expected_file_path = os.path.join(download_folder, expected_file_name)
+
+    #     # Verificar se o arquivo existe
+    #     if not os.path.isfile(expected_file_path):
+    #         return False
+
+    #     try:
+    #         # Tentar parsear o arquivo XML para verificar se está bem formado
+    #         ET.parse(expected_file_path)
+    #         return True  # O arquivo existe e está bem formado
+    #     except ET.ParseError:
+    #         return False  # O arquivo existe, mas não está bem formado
 
 
 # wise = Wise()
+# teste = wise.check_if_file_exists_in_downloads('1','2')
+# print(teste)
+# wise.get_nf_values('109965','149495')
 # wise.Anexar_AP('148624', '123', '135814', '1')
 # time.sleep(2)
 # wise.get_pdf_file('6','715148316')
