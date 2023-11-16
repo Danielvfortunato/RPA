@@ -64,6 +64,8 @@ def consultar_dados_cadastro():
                 AND nf.id = sg.idNaturezaFinanceira
                 AND autorizaRpa = 'S'
                 AND (a.notacaptadarpa = 'N' or a.notacaptadarpa is null)
+                and a.tipodoctonota = 'NFE'
+                and sg.id in ('149690', '149693', '149693', '149760', '149794', '148897', '149316', '149418', '149485', '149506', '149573', '149679', '149679', '149720', '149723', '149725', '149726', '149727', '149748', '149772', '149783', '149857', '149866', '149413', '149724')
             ORDER BY
                 ep.empresa
                 , sg.id
@@ -255,6 +257,27 @@ def consultar_chat_id():
         conn.close()
         return resultados
     
+def consultar_chat_id_dev():
+    conn = conectar_banco_dados()
+    if conn is not None:
+        cursor = conn.cursor()
+        query = """
+            select 
+                idchattelegram 
+            from 
+                usuario 
+            where 
+                login in ('rpa')
+        """
+        cursor.execute(query)
+        resultados = cursor.fetchall()
+        # print("Resultados da consulta:", resultados)
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return resultados
+
+
 def consultar_token_bot():
     conn = conectar_banco_dados()
     if conn is not None:
