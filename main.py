@@ -397,7 +397,11 @@ class NbsRpa():
                     pyautogui.typewrite(cod_servico_nlp)
             else:
                 cod_servico_xml = self.get_item_lista_servico_from_xml_nfs(num_nf_value, id_solicitacao)
-                pyautogui.typewrite(cod_servico_xml)
+                if cod_servico_xml:
+                    pyautogui.typewrite(cod_servico_xml)
+                else:
+                    cod_servico_nlp = nlp3.refine_best_match_code(num_nf_value, id_solicitacao)
+                    pyautogui.typewrite(cod_servico_nlp)
             try:
                 self.wait_until_interactive(vlr_nf)
             except TimeoutError as e:
@@ -715,7 +719,7 @@ class NbsRpa():
                 time.sleep(1)
                 self.click_specific_button(barra_boleto)
                 pyautogui.press("down")
-        else:
+        elif tipo_pagamento_value != 'B':
             for n in num_parcelas:
                 vencimento.click_input()
                 time.sleep(1)
@@ -900,7 +904,6 @@ class NbsRpa():
             pyautogui.press('enter')
 
     def dividir_os_em_blocos(self, os):
-        # return [os[i:i+tamanho_bloco] for i in range(0, len(os), tamanho_bloco)]
         return os.split(',')
 
 
@@ -1376,12 +1379,14 @@ class NbsRpa():
                     texto = pagina.extract_text()
                     if texto:
                         texto_total += texto + '\n'
-            chave_acesso_match = re.search(r'(\d{44})', texto_total)
+
+            chave_acesso_match = re.search(r'((\d{4}\s*){11}\d{4})', texto_total)
             if not chave_acesso_match:
-                chave_acesso_match = re.search(r'((\d{4}\s*){10}\d{4})', texto_total)
+                chave_acesso_match = re.search(r'(\d{44})', texto_total)
             chave_acesso = chave_acesso_match.group(0) if chave_acesso_match else None
             if chave_acesso:
                 chave_acesso = ''.join(re.findall(r'\d', chave_acesso))
+
             return chave_acesso
     
     def get_chave_acesso_tesseract(self, num_docto, id_solicitacao):
@@ -1473,12 +1478,6 @@ class NbsRpa():
         if tipo_docto == 'NFS':
             if not cod_nfse and self.xml_existe == False:
                 return False, "chave de acesso de servico não encontrada"
-        # if not serie:
-        #     return False, "serie não encontrada"
-        # if not icms or icms == 0.0:
-        #     return False, "icms nao encontrado ou zerado"
-        # if not natureza:
-        #     return False, "natureza 5102 não encontrada"
         if tipo_pagamento == 'B':
             for boleto in boletos:
                 converted_boleto_date = self.convert_to_date(boleto[0])
@@ -1500,10 +1499,11 @@ class NbsRpa():
             if len(os) > 7 and ',' not in os:
                 return False, "Os não estão separadas por vírgula"
         
+        
         return True, "Condições aceitas"
         
     def send_message_pre_verification(self, msg, id_solicitacao, numerodocto):
-        chat_ids_results = database.consultar_chat_id_dev()
+        chat_ids_results = database.consultar_chat_id()
         token_result = database.consultar_token_bot()
 
         # chat_id1, chat_id2 = chat_ids_results[0][0], chat_ids_results[1][0]
@@ -1525,10 +1525,9 @@ class NbsRpa():
                 print("Message sent successfully to Telegram!")
 
     def send_message_with_traceback(self, id_solicitacao, numerodocto):
-        chat_ids_results = database.consultar_chat_id()
+        chat_ids_results = database.consultar_chat_id_dev()
         token_result = database.consultar_token_bot()
-        chat_id1, chat_id2 = chat_ids_results[0][0], chat_ids_results[1][0]
-        chat_ids = [chat_id1, chat_id2] 
+        chat_ids = [result[0] for result in chat_ids_results]
         token = token_result[0][0]
         error_message = traceback.format_exc()
         detailed_msg = f"[TRACEBACK ERROR]: {error_message}, id_solicitacao: {id_solicitacao}, numero_docto: {numerodocto}"
@@ -2090,6 +2089,77 @@ class NbsRpa():
         return texto_copiado
     
     
+    # def get_verification_code_from_xml_nfs(self, num_nota, id_solicitacao): 
+    #     path = rf'C:\Users\user\Downloads\xml_{num_nota}_{id_solicitacao}.xml'
+        
+    #     try:
+    #         # Tentativa de encontrar 'CodigoVerificacao'
+    #         tree = ET.parse(path)
+    #         root = tree.getroot()
+    #         verification_code_elem = root.find('.//CodigoVerificacao')
+    #         if verification_code_elem is not None and verification_code_elem.text:
+    #             return verification_code_elem.text
+    #     except ET.ParseError as e:
+    #         print(f"Erro ao analisar 'CodigoVerificacao': {e}")
+    #     except Exception as e:
+    #         print(f"Erro desconhecido ao processar 'CodigoVerificacao': {e}")
+
+    #     try:
+    #         # Tentativa de extrair o 'Id' do 'infNFSe' com namespace
+    #         tree = ET.parse(path)
+    #         root = tree.getroot()
+    #         namespaces = {'ns': 'http://www.sped.fazenda.gov.br/nfse'}
+    #         infNFSe_elem = root.find('.//ns:infNFSe', namespaces)
+    #         if infNFSe_elem is not None and 'Id' in infNFSe_elem.attrib:
+    #             id_value = infNFSe_elem.attrib['Id']
+    #             numeric_id = ''.join(filter(str.isdigit, id_value))
+    #             return numeric_id if numeric_id else None
+    #     except ET.ParseError as e:
+    #         print(f"Erro ao analisar 'infNFSe': {e}")
+    #     except Exception as e:
+    #         print(f"Erro desconhecido ao processar 'infNFSe': {e}")
+
+    #     try:
+    #         # Tentativa de encontrar 'cod_verificador_autenticidade'
+    #         tree = ET.parse(path)
+    #         root = tree.getroot()
+    #         verification_code_element = root.find('.//cod_verificador_autenticidade')
+    #         if verification_code_element is not None and verification_code_element.text:
+    #             return verification_code_element.text
+    #     except ET.ParseError as e:
+    #         print(f"Erro ao analisar 'cod_verificador_autenticidade': {e}")
+    #     except Exception as e:
+    #         print(f"Erro desconhecido ao processar 'cod_verificador_autenticidade': {e}")
+
+    #     return None
+
+
+    # def get_aliquota_from_xml_nfs(self, num_nota, id_solicitacao):
+    #     path = rf'C:\Users\user\Downloads\xml_{num_nota}_{id_solicitacao}.xml'
+    #     try:
+    #         tree = ET.parse(path)
+    #         root = tree.getroot()
+            
+    #         aliquota_elem = root.find('.//Aliquota')
+            
+    #         if aliquota_elem is not None and aliquota_elem.text:
+    #             # Substitui o ponto por vírgula
+    #             return aliquota_elem.text.replace('.', ',')
+    #     except: 
+    #         print("aliquota nao encontrada com o campo .//Aliquota")
+    #     try:
+    #         tree = ET.parse(path)
+    #         root = tree.getroot()
+            
+    #         aliquota_element = root.find('.//aliquota_item_lista_servico')
+            
+    #         if aliquota_element is not None and aliquota_element.text:
+    #             # Substitui o ponto por vírgula
+    #             return aliquota_element.text.replace('.', ',')
+    #     except: 
+    #         print("aliquota nao encontrada com o campo .//aliquota_item_lista_servico")
+    #     return None
+
     def get_verification_code_from_xml_nfs(self, num_nota, id_solicitacao): 
         path = rf'C:\Users\user\Downloads\xml_{num_nota}_{id_solicitacao}.xml'
         
@@ -2120,23 +2190,173 @@ class NbsRpa():
         except Exception as e:
             print(f"Erro desconhecido ao processar 'infNFSe': {e}")
 
+        try:
+            # Tentativa de encontrar 'cod_verificador_autenticidade'
+            tree = ET.parse(path)
+            root = tree.getroot()
+            verification_code_element = root.find('.//cod_verificador_autenticidade')
+            if verification_code_element is not None and verification_code_element.text:
+                return verification_code_element.text
+        except ET.ParseError as e:
+            print(f"Erro ao analisar 'cod_verificador_autenticidade': {e}")
+        except Exception as e:
+            print(f"Erro desconhecido ao processar 'cod_verificador_autenticidade': {e}")
+
+        try:
+            # Tentativa de encontrar 'codigo_autenticidade'
+            tree = ET.parse(path)
+            root = tree.getroot()
+            verification_code_elem = root.find('.//codigo_autenticidade')
+            if verification_code_elem is not None and verification_code_elem.text:
+                return verification_code_elem.text
+        except ET.ParseError as e:
+            print(f"Erro ao analisar 'codigo_autenticidade': {e}")
+        except Exception as e:
+            print(f"Erro desconhecido ao processar 'codigo_autenticidade': {e}")
+
+        try:
+            # Tentativa de encontrar 'codigoVerificacao' diretamente
+            tree = ET.parse(path)
+            root = tree.getroot()
+            verification_code_elem = root.find('.//codigoVerificacao')
+            if verification_code_elem is not None and verification_code_elem.text:
+                return verification_code_elem.text
+        except ET.ParseError as e:
+            print(f"Erro ao analisar 'codigoVerificacao': {e}")
+        except Exception as e:
+            print(f"Erro desconhecido ao processar 'codigoVerificacao': {e}")
+
+        try:
+            # Carregar o XML
+            tree = ET.parse(path)
+            root = tree.getroot()
+
+            # Namespace padrão do XML
+            namespaces = {'ns': 'http://www.abrasf.org.br/nfse.xsd'}
+
+            # Encontrar o elemento 'CodigoVerificacao' utilizando o namespace
+            verification_code_elem = root.find('.//ns:CodigoVerificacao', namespaces)
+            if verification_code_elem is not None:
+                return verification_code_elem.text
+        except ET.ParseError as e:
+            print(f"Erro ao analisar XML: {e}")
+        except Exception as e:
+            print(f"Erro desconhecido ao processar XML: {e}")
+        try:
+            # Carregar o XML
+            tree = ET.parse(path)
+            root = tree.getroot()
+
+            # Encontrar o elemento 'CodigoVerificacao' utilizando o namespace específico
+            verification_code_elem = root.find('.//{http://www.betha.com.br/e-nota-contribuinte-ws}CodigoVerificacao')
+            if verification_code_elem is not None and verification_code_elem.text:
+                return verification_code_elem.text
+        except ET.ParseError as e:
+            print(f"Erro ao analisar 'CodigoVerificacao': {e}")
+        except Exception as e:
+            print(f"Erro desconhecido ao processar 'CodigoVerificacao': {e}")
+        try:
+            # Carregar o XML
+            tree = ET.parse(path)
+            root = tree.getroot()
+
+            # Encontrar o elemento 'CodigoVerificacao' ou 'CodigoValidacao'
+            verification_code_elem = root.find('.//CodigoVerificacao')
+            if verification_code_elem is None or not verification_code_elem.text:
+                verification_code_elem = root.find('.//CodigoValidacao')
+            if verification_code_elem is not None and verification_code_elem.text:
+                return verification_code_elem.text
+        except ET.ParseError as e:
+            print(f"Erro ao analisar 'CodigoVerificacao' ou 'CodigoValidacao': {e}")
+        except Exception as e:
+            print(f"Erro desconhecido ao processar 'CodigoVerificacao' ou 'CodigoValidacao': {e}")
+
+
         return None
+
 
 
     def get_aliquota_from_xml_nfs(self, num_nota, id_solicitacao):
         path = rf'C:\Users\user\Downloads\xml_{num_nota}_{id_solicitacao}.xml'
-        
-        tree = ET.parse(path)
-        root = tree.getroot()
-        
-        aliquota_elem = root.find('.//Aliquota')
-        
-        if aliquota_elem is not None and aliquota_elem.text:
-            # Substitui o ponto por vírgula
-            return aliquota_elem.text.replace('.', ',')
-        else:
-            return None
+        try:
+            tree = ET.parse(path)
+            root = tree.getroot()
+            
+            aliquota_elem = root.find('.//Aliquota')
+            
+            if aliquota_elem is not None and aliquota_elem.text:
+                # Substitui o ponto por vírgula
+                return aliquota_elem.text.replace('.', ',')
+        except: 
+            print("aliquota nao encontrada com o campo .//Aliquota")
+        try:
+            tree = ET.parse(path)
+            root = tree.getroot()
+            
+            aliquota_element = root.find('.//aliquota_item_lista_servico')
+            
+            if aliquota_element is not None and aliquota_element.text:
+                # Substitui o ponto por vírgula
+                return aliquota_element.text.replace('.', ',')
+        except: 
+            print("aliquota nao encontrada com o campo .//aliquota_item_lista_servico")
+        try:
+            tree = ET.parse(path)
+            root = tree.getroot()
+            
+            # Encontrar o elemento <itemServico>
+            item_servico_elem = root.find('.//itemServico')
+            
+            if item_servico_elem is not None:
+                # Dentro do elemento <itemServico>, encontrar o elemento <aliquota>
+                aliquota_elem = item_servico_elem.find('.//aliquota')
+                
+                if aliquota_elem is not None and aliquota_elem.text:
+                    # Substituir o ponto por vírgula
+                    aliquota_value = float(aliquota_elem.text) * 100
+                    aliquota_value = str(aliquota_value)
+                    aliquota_value = aliquota_value.replace('.', ',')
+                        
+                    # Se o valor for zero, retornar None
+                    if aliquota_value == '0':
+                        return None
+                    else:
+                        return aliquota_value
+        except ET.ParseError as e:
+            print(f"Erro ao analisar XML: {e}")
+        try:
+            # Carregar o XML
+            tree = ET.parse(path)
+            root = tree.getroot()
 
+            # Namespace padrão do XML
+            namespaces = {'ns': 'http://www.abrasf.org.br/nfse.xsd'}
+
+            # Encontrar o elemento 'Aliquota' utilizando o namespace
+            aliquota_elem = root.find('.//ns:Aliquota', namespaces)
+            if aliquota_elem is not None and aliquota_elem.text:
+                # Substitui o ponto por vírgula
+                return aliquota_elem.text.replace('.', ',')
+        except ET.ParseError as e:
+            print(f"Erro ao analisar XML: {e}")
+        except Exception as e:
+            print(f"Erro desconhecido ao processar XML: {e}")
+        try:
+            # Carregar o XML
+            tree = ET.parse(path)
+            root = tree.getroot()
+
+            # Encontrar o elemento 'Aliquota' utilizando o namespace específico
+            aliquota_elem = root.find('.//{http://www.betha.com.br/e-nota-contribuinte-ws}Aliquota')
+            if aliquota_elem is not None and aliquota_elem.text:
+                # Substituir o ponto por vírgula
+                return aliquota_elem.text.replace('.', ',')
+        except ET.ParseError as e:
+            print(f"Erro ao analisar XML: {e}")
+        except Exception as e:
+            print(f"Erro desconhecido ao processar XML: {e}")
+
+        return None
 
     def get_item_lista_servico_from_xml_nfs(self, num_nota, id_solicitacao):
         path = rf'C:\Users\user\Downloads\xml_{num_nota}_{id_solicitacao}.xml'
@@ -2167,10 +2387,48 @@ class NbsRpa():
             print("Erro ao analisar 'cTribNac'.")
         except Exception as e:
             print(f"Erro desconhecido ao processar 'cTribNac': {e}")
+        try:
+            # Tentativa de encontrar 'codigo_item_lista_servico'
+            tree = ET.parse(path)
+            root = tree.getroot()
+            
+            item_lista_servico_elem = root.find('.//codigo_item_lista_servico')
+            if item_lista_servico_elem is not None and item_lista_servico_elem.text:
+                return str(int(item_lista_servico_elem.text))[:4]
+        except ET.ParseError:
+            print("Erro ao analisar 'codigo_item_lista_servico'.")
+        except Exception as e:
+            print(f"Erro desconhecido ao processar 'codigo_item_lista_servico': {e}")
+        try:
+            # Carregar o XML
+            tree = ET.parse(path)
+            root = tree.getroot()
+            
+            # Encontrar o elemento 'ItemListaServico' utilizando o namespace específico
+            item_lista_servico_elem = root.find('.//{http://www.betha.com.br/e-nota-contribuinte-ws}ItemListaServico')
+            if item_lista_servico_elem is not None and item_lista_servico_elem.text:
+                return str(int(item_lista_servico_elem.text))[:4]
+        except ET.ParseError as e:
+            print(f"Erro ao analisar 'ItemListaServico': {e}")
+        except Exception as e:
+            print(f"Erro desconhecido ao processar 'ItemListaServico': {e}")
+        try:
+            # Carregar o XML
+            tree = ET.parse(path)
+            root = tree.getroot()
+            
+            # Encontrar o elemento 'Codigo'
+            codigo_elem = root.find('.//Codigo')
+            if codigo_elem is not None and codigo_elem.text:
+                # Remover o ponto do código do serviço, se houver
+                return codigo_elem.text.replace('.', '')
+        except ET.ParseError as e:
+            print(f"Erro ao analisar 'Codigo': {e}")
+        except Exception as e:
+            print(f"Erro desconhecido ao processar 'Codigo': {e}")
 
         return None
     
-
     # def corrigir_xml(self, num_docto, id_solicitacao):
     #     # Define o caminho do arquivo na pasta de Downloads
     #     download_folder = str(Path.home() / "Downloads")
@@ -2214,23 +2472,27 @@ class NbsRpa():
             print("sisfin nao esta aberto")
 
 
-    def check_if_file_exists_in_downloads(self, num_nota, num_solicitacao, download_folder=None):
+    def check_if_file_exists_in_downloads(self, num_nota, num_solicitacao, tipodoctonota, download_folder=None):
         if download_folder is None:
             download_folder = str(Path.home() / "Downloads")
 
         expected_file_name = f"xml_{num_nota}_{num_solicitacao}.xml"
         expected_file_path = os.path.join(download_folder, expected_file_name)
 
-        # Verificar se o arquivo existe
         if not os.path.isfile(expected_file_path):
             return False
 
         try:
-            # Tentar parsear o arquivo XML para verificar se está bem formado
             ET.parse(expected_file_path)
-            return True  # O arquivo existe e está bem formado
         except ET.ParseError:
-            return False  # O arquivo existe, mas não está bem formado
+            return False
+        if tipodoctonota == 'NFS':
+            if self.get_verification_code_from_xml_nfs(num_nota, num_solicitacao) is None:
+                return False
+        elif tipodoctonota == 'NFE':
+            return False
+
+        return True
 
     def funcao_main(self):
         registros = database.consultar_dados_cadastro()
@@ -2261,18 +2523,10 @@ class NbsRpa():
             wise_instance = Wise()
             wise_instance.get_nf_values(numerodocto, id_solicitacao)
             time.sleep(3)
-            
-            # time.sleep(2)
-            # wise_instance.save_as(numerodocto, id_solicitacao)
-            # google_focus = r"C:\Users\user\Documents\RPA_Project\imagens\google_focus.PNG"
-            # time.sleep(1)
-            # self.click_specific_button(google_focus)
-
             wise_instance.rename_last_downloaded_file(numerodocto, id_solicitacao)
             time.sleep(2)
-            self.xml_existe = self.check_if_file_exists_in_downloads(numerodocto, id_solicitacao)
-            if self.xml_existe == True:
-                self.minimize()
+            self.xml_existe = self.check_if_file_exists_in_downloads(numerodocto, id_solicitacao, tipo_docto_value)
+            print(self.xml_existe)
             chave_de_acesso_value = self.get_chave_acesso(numerodocto, id_solicitacao)
             time.sleep(1)
             cod_nfse = self.get_codigo_from_pdf(numerodocto, id_solicitacao)
@@ -2285,16 +2539,13 @@ class NbsRpa():
             success, message = self.check_conditions(tipo_docto_value, chave_de_acesso_value, serie_nota, natureza_value, vencimento_value, inss, irff, piscofinscsl, tipo_pagamento_value, icms, boletos, cod_nfse, numeroos)  
             time.sleep(2)
             if success:
-                # try:
+            # try:
                 if tipo_docto_value == 'NFE':
                     if self.xml_existe == False:
                         wise_instance.get_xml(chave_de_acesso_value)
                         time.sleep(2)
-                # self.back_to_nbs()
+                self.minimize()
                 time.sleep(2)
-                # wise_instance.fechar_aba()
-                # if success:
-                    # try:
                 empresa_atual = row[2]
                 self.focus_nbs()
                 time.sleep(2)
