@@ -63,12 +63,15 @@ def consultar_dados_cadastro():
                 AND rc.id = sg.idcontabilizacaopadrao 
                 AND nf.id = sg.idNaturezaFinanceira
                 AND autorizaRpa = 'S'
+                and a.tipodoctonota = 'NFS'
                 AND (a.notacaptadarpa = 'N' or a.notacaptadarpa is null)
-                and a.tipodoctonota = 'NFE'
-                and sg.id in ('149690', '149693', '149693', '149760', '149794', '148897', '149316', '149418', '149485', '149506', '149573', '149679', '149679', '149720', '149723', '149725', '149726', '149727', '149748', '149772', '149783', '149857', '149866', '149413', '149724')
-            ORDER BY
-                ep.empresa
+             ORDER BY
+				CASE 
+	                WHEN sg.formapagamento = 'B' THEN (select datavencimento from anexosolicitacaogasto where desconsiderAranexo = 'N' AND tipo = 'Boleto' AND (notacaptadarpa = 'N' or notacaptadarpa is null ) and idSolicitacaoGasto = sg.id limit 1)
+                 	WHEN sg.formapagamento != 'B' THEN (select datavencimento from anexosolicitacaogasto where desconsiderAranexo = 'N' and (tipo = 'DANFE' OR tipo = 'DANFE-ADTO') AND (notacaptadarpa = 'N' or notacaptadarpa is null ) and idSolicitacaoGasto = sg.id limit 1)
+                else null END
                 , sg.id
+                , empresa
         """
         cursor.execute(consulta)
         resultados = cursor.fetchall()
@@ -121,6 +124,8 @@ def consultar_boleto(id_solicitacao):
                 AND desconsiderAranexo = 'N'
                 AND tipo = 'Boleto'
                 AND (notacaptadarpa = 'N' or notacaptadarpa is null)
+            order by 
+                anexoSolicitacaoGasto.datavencimento 
             """
         cursor.execute(consulta, (id_solicitacao,))
         resultados = cursor.fetchall()
@@ -247,7 +252,7 @@ def consultar_chat_id():
             from 
                 usuario 
             where 
-                login in ('rpa', 'Daniel', 'Pamela', 'geovanna')
+                login in ('rpa', 'Pamela', 'geovanna')
         """
         cursor.execute(query)
         resultados = cursor.fetchall()
