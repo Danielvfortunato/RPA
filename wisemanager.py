@@ -163,13 +163,16 @@ class Wise():
             # self.reload_page()
             controles = WebDriverWait(self.driver, 60).until(EC.presence_of_all_elements_located((By.NAME, "numeroControle")))
             todos_preenchidos = all(controle.get_attribute('value') != "" for controle in controles if controle.is_displayed())
+            pyautogui.scroll(1000)
+            time.sleep(2)
             if todos_preenchidos:
                 botao_confirmar = WebDriverWait(self.driver, 60).until(EC.element_to_be_clickable((By.XPATH, "//button[contains(@title, 'Confirma Lançamento no ERP')]")))
                 # self.driver.execute_script("arguments[0].scrollIntoView();", botao_confirmar)
-                pyautogui.scroll(1000)
+                
                 botao_confirmar.click()
                 time.sleep(3)
                 confirmar = r"C:\Users\user\Documents\RPA_Project\imagens\Confirmar.PNG"
+                time.sleep(3)
                 self.click_specific_button_wise(confirmar)
             else:
                 print("Nem todos os controles estão preenchidos. Não foi possível confirmar.")
