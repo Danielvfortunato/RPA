@@ -25,6 +25,7 @@ class NbsRpa():
     
     def __init__(self):
         self.existe_xml = False
+        self.efetivado = False
     
     def open_application(self):
         try:
@@ -356,7 +357,7 @@ class NbsRpa():
             time.sleep(1)
             aliquota_field.click_input()
             time.sleep(1)
-            if self.xml_existe == False:
+            if self.xml_existe == False and self.get_aliquota_from_xml_nfs(num_nf_value, id_solicitacao) == None:
                 if aliquota != '0,00' and aliquota is not None:
                     time.sleep(1)
                     pyautogui.doubleClick()
@@ -372,7 +373,7 @@ class NbsRpa():
                     time.sleep(1)
                     pyautogui.typewrite(aliquota_img)
                     time.sleep(1)
-            else:
+            elif (self.xml_existe == True or self.xml_existe == False) and self.get_aliquota_from_xml_nfs(num_nf_value, id_solicitacao) != None:
                 aliquota_xml = self.get_aliquota_from_xml_nfs(num_nf_value, id_solicitacao)
                 if aliquota_xml != '0,00' and aliquota_xml is not None:
                     time.sleep(1)
@@ -384,7 +385,7 @@ class NbsRpa():
             for _ in range(3):
                 pyautogui.press('tab')
                 time.sleep(1)
-            if self.xml_existe == False:
+            if self.get_item_lista_servico_from_xml_nfs(num_nf_value, id_solicitacao) is None:
                 cod_servico = self.get_service_code(num_nf_value, id_solicitacao)
                 cod_servico_img = self.extract_service_code_from_image(num_nf_value, id_solicitacao)
                 time.sleep(2)
@@ -395,7 +396,7 @@ class NbsRpa():
                 else:
                     cod_servico_nlp = nlp3.refine_best_match_code(num_nf_value, id_solicitacao)
                     pyautogui.typewrite(cod_servico_nlp)
-            else:
+            elif self.get_item_lista_servico_from_xml_nfs(num_nf_value, id_solicitacao) != None:
                 cod_servico_xml = self.get_item_lista_servico_from_xml_nfs(num_nf_value, id_solicitacao)
                 if cod_servico_xml:
                     pyautogui.typewrite(cod_servico_xml)
@@ -414,7 +415,8 @@ class NbsRpa():
                 pyautogui.press('tab')
                 time.sleep(0.5)
             time.sleep(1)
-            pyautogui.typewrite(obs)
+            texto_completo = f"{obs} Numero de solicitacao: {id_solicitacao}"
+            pyautogui.typewrite(texto_completo)
             time.sleep(1)
             try:
                 self.wait_until_interactive(nota_ext)
@@ -457,7 +459,8 @@ class NbsRpa():
                 return
             observacao.click_input()
             time.sleep(1)
-            pyautogui.typewrite(obs)
+            texto_completo = f"{obs} Numero de solicitacao: {id_solicitacao}"
+            pyautogui.typewrite(texto_completo)
             time.sleep(1)
             try:
                 self.wait_until_interactive(nota_ext)
@@ -476,7 +479,7 @@ class NbsRpa():
             #     mes_atual = datetime.datetime.now().month
             #     if mes_data_emissao != mes_atual:
             #         nota_ext.click_input()
-            #     time.sleep(2)                
+            #     time.sleep(2)
 
             cfop_results = self.get_data_from_xml(chave_acesso, num_nf_value, id_solicitacao)
             time.sleep(1)
@@ -715,10 +718,12 @@ class NbsRpa():
                 pyautogui.doubleClick()
                 time.sleep(1)
                 pyautogui.press("backspace")
+                print(boleto[0])
                 vencimento.type_keys(boleto[0])
                 time.sleep(1)
-                self.click_specific_button(barra_boleto)
+                self.click_specific_button_confidence_9(barra_boleto)
                 pyautogui.press("down")
+                print("boleto")
         elif tipo_pagamento_value != 'B':
             for n in num_parcelas:
                 vencimento.click_input()
@@ -726,10 +731,12 @@ class NbsRpa():
                 pyautogui.doubleClick()
                 time.sleep(1)
                 pyautogui.press("backspace")
+                print(n[0])
                 vencimento.type_keys(n[0])
                 time.sleep(1)
-                self.click_specific_button(barra_boleto)
+                self.click_specific_button_confidence_9(barra_boleto)
                 pyautogui.press("down")
+                print("nota")
         print(terceiro)
         if terceiro == 'S':
             self.janela_se_terceiro(numeroos)
@@ -814,6 +821,22 @@ class NbsRpa():
                 time.sleep(0.5)  
         except:
             pyautogui.press("enter")
+
+    def click_specific_button_confidence_9(self, button_image_path, confidence_level=0.9, timeout=10):
+            end_time = time.time() + timeout
+            while time.time() < end_time:
+                button_location = pyautogui.locateOnScreen(button_image_path, confidence=confidence_level)
+                if button_location:
+                    button_x, button_y, button_width, button_height = button_location
+                    button_center_x = button_x + button_width // 2
+                    button_center_y = button_y + button_height // 2
+                    pyautogui.click(button_center_x, button_center_y)
+                    print("Botão clicado!")
+                    return
+                time.sleep(1)  # Espera um segundo antes de tentar novamente
+            
+            print("Botão não encontrado.")
+
     def execute_rpa_actions(self, mapped_value, valor):
         title = "Entrada Diversas / Operação: 52-Entrada Diversas"
         try:
@@ -1038,13 +1061,16 @@ class NbsRpa():
         time.sleep(2)
         # file_name.type_keys(f"AP_{num_docto}{id_solicitacao}")
         self.type_slowly(file_name, f"AP_{num_docto}{id_solicitacao}")
+        time.sleep(2)
         pyautogui.press('tab')
+        time.sleep(2)
         try:
             self.wait_until_interactive(file_type)
         except TimeoutError as e:
             print(str(e))
             return
         file_type.click_input()
+        time.sleep(1)
         for _ in range(2):
             pyautogui.press('down')
             time.sleep(0.5)
@@ -1071,15 +1097,6 @@ class NbsRpa():
         pyautogui.hotkey('ctrl', 'w')
 
     def click_specific_button(self, button_image_path, confidence_level=0.8, timeout=10):
-        # button_location = pyautogui.locateOnScreen(button_image_path, confidence=confidence_level)
-        # if button_location:
-        #     button_x, button_y, button_width, button_height = button_location
-        #     button_center_x = button_x + button_width // 2
-        #     button_center_y = button_y + button_height // 2
-        #     pyautogui.click(button_center_x, button_center_y)
-        #     print("Botão clicado!")
-        # else:
-        #     print("Botão não encontrado.")
             end_time = time.time() + timeout
             while time.time() < end_time:
                 button_location = pyautogui.locateOnScreen(button_image_path, confidence=confidence_level)
@@ -1090,7 +1107,7 @@ class NbsRpa():
                     pyautogui.click(button_center_x, button_center_y)
                     print("Botão clicado!")
                     return
-                time.sleep(1)  # Espera um segundo antes de tentar novamente
+                time.sleep(1)
             
             print("Botão não encontrado.")
 
@@ -1371,7 +1388,7 @@ class NbsRpa():
             return True if result else False
 
     def get_chave_acesso_pdfplumber(self, num_docto, id_solicitacao):
-        if self.xml_existe == False:
+        if self.xml_existe == 'False':
             caminho_pdf = rf"C:\Users\user\Documents\APs\nota_{num_docto}{id_solicitacao}.pdf"
             texto_total = ""
             with pdfplumber.open(caminho_pdf) as pdf:
@@ -1380,12 +1397,18 @@ class NbsRpa():
                     if texto:
                         texto_total += texto + '\n'
 
-            chave_acesso_match = re.search(r'((\d{4}\s*){11}\d{4})', texto_total)
+            # Primeira tentativa: Busca por uma sequência de 44 dígitos em blocos de 4
+            chave_acesso_match = re.search(r'((\d{4}\s*){10}\d{4})', texto_total)
+
+            # Segunda tentativa: Busca direta por uma sequência de 44 dígitos
             if not chave_acesso_match:
                 chave_acesso_match = re.search(r'(\d{44})', texto_total)
-            chave_acesso = chave_acesso_match.group(0) if chave_acesso_match else None
-            if chave_acesso:
-                chave_acesso = ''.join(re.findall(r'\d', chave_acesso))
+
+            # Terceira tentativa: Busca pelo padrão específico com pontos e hífen
+            if not chave_acesso_match:
+                chave_acesso_match = re.search(r'\d{2}\.\d{2}\.\d{2}\.\d{14}\.\d{2}\.\d{3}\.\d{9}\.\d{9}-\d', texto_total)
+
+            chave_acesso = ''.join(re.findall(r'\d', chave_acesso_match.group(0))) if chave_acesso_match else None
 
             return chave_acesso
     
@@ -1416,7 +1439,7 @@ class NbsRpa():
             chave_pdfplumber = self.get_chave_acesso_pdfplumber(num_docto, id_solicitacao)
             if chave_pdfplumber:
                 return chave_pdfplumber
-            else:
+            elif chave_pdfplumber is None:
                 return self.get_chave_acesso_tesseract(num_docto, id_solicitacao)
 
     def get_modelo(self, chave_acesso):
@@ -1467,30 +1490,32 @@ class NbsRpa():
         year = int(str_num[4:])
         return datetime.date(year, month, day) 
         
-    def check_conditions(self, tipo_docto, chave_acesso, serie, natureza, vencimento, inss, irff, piscofinscsl, tipo_pagamento, icms, boletos, cod_nfse, os):
+    def check_conditions(self, tipo_docto,serie, natureza, vencimento, inss, irff, piscofinscsl, tipo_pagamento, icms, boletos, cod_nfse, os, iss_value):
         current_date = datetime.date.today()
         converted_vencimento = self.convert_to_date(vencimento)
         # if tipo_docto != "NFE":
         #     return False, "Tipo de documento inválido"
-        if tipo_docto == 'NFE':
-            if not chave_acesso and self.xml_existe == False:
-                return False, "chave de acesso de produto não encontrada"
+        # if tipo_docto == 'NFE':
+        #     if not chave_acesso and self.xml_existe == False:
+        #         return False, "chave de acesso de produto não encontrada"
         if tipo_docto == 'NFS':
             if not cod_nfse and self.xml_existe == False:
                 return False, "chave de acesso de servico não encontrada"
-        if tipo_pagamento == 'B':
-            for boleto in boletos:
-                converted_boleto_date = self.convert_to_date(boleto[0])
-                if converted_boleto_date < current_date:
-                    return False, "O primeiro boleto tem vencimento anterior à data atual"
-                break 
-        elif tipo_pagamento != 'B':
-            if converted_vencimento < current_date:
-                return False, "vencimento menor que data de efetivacao"
+        # if tipo_pagamento == 'B':
+        #     for boleto in boletos:
+        #         converted_boleto_date = self.convert_to_date(boleto[0])
+        #         if converted_boleto_date < current_date:
+        #             return False, "O primeiro boleto tem vencimento anterior à data atual"
+        #         break 
+        # elif tipo_pagamento != 'B':
+        #     if converted_vencimento < current_date:
+        #         return False, "vencimento menor que data de efetivacao"
         if inss:
             return False, "inss encontrado"
         if irff:
             return False, "irff encontrado"
+        if iss_value:
+            return False, "iss encontrado"
         if piscofinscsl:
             return False, "piscofinscsl encontrado"
         if tipo_pagamento not in ('B', 'A', 'P', 'D', 'E', 'C', 'O'):
@@ -1524,6 +1549,7 @@ class NbsRpa():
             else:
                 print("Message sent successfully to Telegram!")
 
+
     def send_message_with_traceback(self, id_solicitacao, numerodocto):
         chat_ids_results = database.consultar_chat_id_dev()
         token_result = database.consultar_token_bot()
@@ -1555,6 +1581,28 @@ class NbsRpa():
 
         token = token_result[0][0]
         success_msg = f"Lançamento efetuado com sucesso, id solicitacao: {id_solicitacao}, numero da nota: {numero_nota}, tipo da nota: {tipo_nota}"
+        
+        base_url = f"https://api.telegram.org/bot{token}/sendMessage"
+
+        for chat_id in chat_ids:
+            payload = {
+                'chat_id': chat_id,
+                'text': success_msg
+            }
+            response = requests.post(base_url, data=payload)
+            if response.status_code != 200:
+                print(f"Failed to send success message to chat_id {chat_id}. Response: {response.content}")
+            else:
+                print(f"Success message sent successfully to chat_id {chat_id} on Telegram!")
+
+    def send_failure_try_message(self, id_solicitacao, numero_nota):
+        chat_ids_results = database.consultar_chat_id()
+        token_result = database.consultar_token_bot()
+
+        chat_ids = [result[0] for result in chat_ids_results]
+
+        token = token_result[0][0]
+        success_msg = f"Tentativas excedidas, id_solicitacao: {id_solicitacao}, numero da nota: {numero_nota}"
         
         base_url = f"https://api.telegram.org/bot{token}/sendMessage"
 
@@ -1726,7 +1774,13 @@ class NbsRpa():
 
     def get_codigo_from_pdf(self, num_docto, id_solicitacao):
         if self.xml_existe == False:
-            texto_total = self.extract_text_from_pdf_with_pdfplumber(num_docto, id_solicitacao)
+            try:
+                texto_total = self.extract_text_from_pdf_with_pdfplumber(num_docto, id_solicitacao)
+            except:
+                try:
+                    texto_total = self.extract_text_from_pdf(num_docto, id_solicitacao)
+                except:
+                    return None
             # print(texto_total)
 
             # Padrão para "Chave de Acesso da NFS-e"
@@ -1762,6 +1816,12 @@ class NbsRpa():
                 codigo4 = codigo_match4.group(1).replace(' ', '')  # remove os espaços do código capturado
                 if "000000" not in codigo4:
                     return codigo4
+            
+            if not codigo_match5 and not codigo_match4 and not codigo_match1 and not chave_acesso_match:
+                long_number_pattern = r'\b\d{37,}\b'
+                long_number_match = re.search(long_number_pattern, texto_total)
+                if long_number_match:
+                    return long_number_match.group()
 
             return None  # Retorna None se nenhum código for encontrado
 
@@ -2429,26 +2489,6 @@ class NbsRpa():
 
         return None
     
-    # def corrigir_xml(self, num_docto, id_solicitacao):
-    #     # Define o caminho do arquivo na pasta de Downloads
-    #     download_folder = str(Path.home() / "Downloads")
-    #     file_name = f"xml_{num_docto}_{id_solicitacao}.xml"
-    #     path = os.path.join(download_folder, file_name)
-
-    #     try:
-    #         with open(path, 'r', encoding='utf-8') as file:
-    #             content = file.read()
-            
-    #         # Substitui '&' por '&amp;' se não for parte de uma entidade XML válida
-    #         content = content.replace('&', '&amp;')
-            
-    #         with open(path, 'w', encoding='utf-8') as file:
-    #             file.write(content)
-            
-    #         print("Arquivo corrigido com sucesso.")
-    #     except Exception as e:
-    #         print(f"Erro ao corrigir o arquivo: {e}")
-
     def minimize(self):
         pyautogui.hotkey("win", "m")
 
@@ -2494,16 +2534,66 @@ class NbsRpa():
 
         return True
 
+
+    def get_attempt_count(self, id_solicitacao, numerodocto):
+        """Obtém a contagem atual de tentativas para uma dada solicitação e documento."""
+        path = r"C:\Users\user\Documents\rpa_project\tentativas"
+        filename = f"{id_solicitacao}_{numerodocto}_attempts.txt"
+        filepath = os.path.join(path, filename)
+        try:
+            with open(filepath, "r") as file:
+                return int(file.read())
+        except FileNotFoundError:
+            return 0
+
+    def update_attempt_count(self, id_solicitacao, numerodocto, count):
+        """Atualiza a contagem de tentativas no arquivo."""
+        path = r"C:\Users\user\Documents\rpa_project\tentativas"
+        filename = f"{id_solicitacao}_{numerodocto}_attempts.txt"
+        filepath = os.path.join(path, filename)
+        with open(filepath, "w") as file:
+            file.write(str(count))
+
+    def delete_attempt_file(self, id_solicitacao, numerodocto):
+        """Deleta o arquivo de tentativas."""
+        path = r"C:\Users\user\Documents\rpa_project\tentativas"
+        filename = f"{id_solicitacao}_{numerodocto}_attempts.txt"
+        filepath = os.path.join(path, filename)
+        try:
+            os.remove(filepath)
+            print(f"Arquivo {filepath} deletado com sucesso.")
+        except FileNotFoundError:
+            print(f"Arquivo {filepath} não encontrado. Nada a deletar.")
+        except Exception as e:
+            print(f"Erro ao deletar o arquivo {filepath}: {e}")
+
+
+    def is_within_blocked_time(self):
+        current_time = datetime.datetime.now().time()
+        blocked_times = [("10:20", "10:35"), ("12:20", "12:35"), ("17:20", "17:35"), ("22:20", "22:35")]
+
+        for start, end in blocked_times:
+            start_time = datetime.datetime.strptime(start, "%H:%M").time()
+            end_time = datetime.datetime.strptime(end, "%H:%M").time()
+
+            if start_time <= current_time <= end_time:
+                return True
+        return False
+    
     def funcao_main(self):
         registros = database.consultar_dados_cadastro()
         empresa_anterior = None
         for row in registros:
-            # try:
-            self.existe_xml = False
-            id_empresa = row[18]
+            self.efetivado = False
+            # if not self.is_within_blocked_time():
             id_solicitacao = row[0]
-            tipo_pagamento_value = row[5]
-            numeroos = row[11]
+            time.sleep(1)
+            database.atualizar_boletos_vencidos(id_solicitacao)
+            time.sleep(2)
+            database.atualizar_notas_vencidas(id_solicitacao)
+            time.sleep(2)
+            database.atualizar_adtos_vencidos(id_solicitacao)
+            time.sleep(3)
             notas_fiscais = database.consultar_nota_fiscal(id_solicitacao)
             if notas_fiscais:
                 numerodocto = notas_fiscais[0][2]
@@ -2516,108 +2606,135 @@ class NbsRpa():
                 piscofinscsl = notas_fiscais[0][8]
                 iss = notas_fiscais[0][9]
                 vencimento_value = notas_fiscais[0][4]
-            time.sleep(1)
-            self.remover_arquivo_nota(numerodocto, id_solicitacao)
-            self.remover_arquivo_xml(numerodocto, id_solicitacao)
-            time.sleep(1)
-            wise_instance = Wise()
-            wise_instance.get_nf_values(numerodocto, id_solicitacao)
-            time.sleep(3)
-            wise_instance.rename_last_downloaded_file(numerodocto, id_solicitacao)
-            time.sleep(2)
-            self.xml_existe = self.check_if_file_exists_in_downloads(numerodocto, id_solicitacao, tipo_docto_value)
-            print(self.xml_existe)
-            chave_de_acesso_value = self.get_chave_acesso(numerodocto, id_solicitacao)
-            time.sleep(1)
-            cod_nfse = self.get_codigo_from_pdf(numerodocto, id_solicitacao)
-            serie_nota = self.get_serie(numerodocto, id_solicitacao)
-            pdf_inteiro = self.extract_text_from_pdf(numerodocto, id_solicitacao)
-            natureza_value = self.find_isolated_5102(pdf_inteiro)
-            icms = self.get_valor_icms(numerodocto, id_solicitacao)
-            boletos = database.consultar_boleto(id_solicitacao)
-            time.sleep(1)
-            success, message = self.check_conditions(tipo_docto_value, chave_de_acesso_value, serie_nota, natureza_value, vencimento_value, inss, irff, piscofinscsl, tipo_pagamento_value, icms, boletos, cod_nfse, numeroos)  
-            time.sleep(2)
-            if success:
-            # try:
-                if tipo_docto_value == 'NFE':
-                    if self.xml_existe == False:
-                        wise_instance.get_xml(chave_de_acesso_value)
-                        time.sleep(2)
-                self.minimize()
-                time.sleep(2)
-                empresa_atual = row[2]
-                self.focus_nbs()
-                time.sleep(2)
-                if empresa_atual != empresa_anterior:
-                    self.close_aplications_end()
-                    time.sleep(3)
-                    self.open_application()
-                    self.login()
-                    cod_matriz = row[3]
-                    self.janela_empresa_filial(row[2], row[3])
-                empresa_anterior = empresa_atual
-                print(empresa_anterior, empresa_atual)
-                self.access_contas_a_pagar()
-                self.janela_entrada(tipo_docto_value)
-                if tipo_docto_value == 'NFE':
-                    self.importar_xml()
-                    self.abrir_xml(chave_de_acesso_value, numerodocto, id_solicitacao)
-                cnpj = row[1]
-                contab_descricao_value = row[6]
-                cod_contab_value = row[7]
-                total_parcelas_value = row[9]
-                natureza_financeira_value = row[8]
-                usa_rateio_centro_custo = row[14] 
-                valor_sg = row[15] 
-                id_rateiocc = row[16]
-                obs = row[17]
-                cidade_cliente = row[19]
-                rateios_aut = database.consultar_rateio_aut(id_rateiocc)
-                boletos = database.consultar_boleto(id_solicitacao)
-                rateios = database.consultar_rateio(id_solicitacao)
-                num_parcelas = database.numero_parcelas(id_solicitacao, numerodocto)
-                # numeroos = row[11]
-                terceiro = row[12]
-                estado = row[13]
-                time.sleep(3)
-                self.janela_cadastro_nf(cnpj, numerodocto, serie_value, data_emissao_value, tipo_docto_value, valor_value, contab_descricao_value, total_parcelas_value, tipo_pagamento_value, natureza_financeira_value, numeroos, terceiro, estado, usa_rateio_centro_custo, valor_sg, rateios, rateios_aut, inss, irff, piscofinscsl, iss, vencimento_value, obs, cod_contab_value, boletos, num_parcelas, id_solicitacao, chave_de_acesso_value, cod_matriz, cidade_cliente, empresa_atual)
-                self.janela_imprimir_nota()
-                self.janela_secundario_imprimir_nota()
-                self.extract_pdf()
-                self.save_as(numerodocto, id_solicitacao)
-                self.close_extract_pdf_window()
-                time.sleep(2)
-                self.click_on_cancel()
-                self.janela_valores()
-                time.sleep(2)
-                num_controle = self.get_controle_value()
-                time.sleep(2)
-                print(num_controle)
-                time.sleep(5)
-                wise_instance.Anexar_AP(id_solicitacao, num_controle, numerodocto, serie_value)
-                time.sleep(2)
-                wise_instance.get_pdf_file(numerodocto, id_solicitacao)
-                time.sleep(4)
-                wise_instance.confirm()
-                time.sleep(3)
-                database.atualizar_anexosolicitacaogasto(numerodocto)
-                time.sleep(2)
-                send_mail.enviar_email(id_solicitacao, numerodocto)
-                time.sleep(4)
-                self.back_to_nbs()
-                time.sleep(2)
-                self.close_aplications_half()
+            tentativas = self.get_attempt_count(id_solicitacao, numerodocto)
+            if tentativas <= 3:
+                self.update_attempt_count(id_solicitacao, numerodocto, tentativas + 1)
+                self.existe_xml = False
+                id_empresa = row[18]
+                tipo_pagamento_value = row[5]
+                numeroos = row[11]
                 time.sleep(1)
-                self.send_success_message(id_solicitacao, numerodocto, tipo_docto_value)
+                self.remover_arquivo_nota(numerodocto, id_solicitacao)
+                self.remover_arquivo_xml(numerodocto, id_solicitacao)
+                time.sleep(1)
+                wise_instance = Wise()
+                wise_instance.get_nf_values(numerodocto, id_solicitacao)
                 time.sleep(3)
-                # except:
-                #     self.send_message_with_traceback(id_solicitacao, numerodocto)
-            else:
-                self.send_message_pre_verification(message, id_solicitacao, numerodocto)
-                database.autoriza_rpa_para_n(id_solicitacao)
+                wise_instance.rename_last_downloaded_file(numerodocto, id_solicitacao)
                 time.sleep(2)
-                self.back_to_nbs()
+                self.xml_existe = self.check_if_file_exists_in_downloads(numerodocto, id_solicitacao, tipo_docto_value)
+                print(self.xml_existe)
+                # chave_de_acesso_value = self.get_chave_acesso(numerodocto, id_solicitacao)
+                time.sleep(1)
+                # if tipo_docto_value == 'NFS':
+                try:
+                    cod_nfse = self.get_codigo_from_pdf(numerodocto, id_solicitacao)
+                except:
+                    cod_nfse = None
+                serie_nota = self.get_serie(numerodocto, id_solicitacao)
+                pdf_inteiro = self.extract_text_from_pdf(numerodocto, id_solicitacao)
+                natureza_value = self.find_isolated_5102(pdf_inteiro)
+                icms = self.get_valor_icms(numerodocto, id_solicitacao)
+                boletos = database.consultar_boleto(id_solicitacao)
+                cnpj = row[1]
+                time.sleep(1)
+                success, message = self.check_conditions(tipo_docto_value, serie_nota, natureza_value, vencimento_value, inss, irff, piscofinscsl, tipo_pagamento_value, icms, boletos, cod_nfse, numeroos, iss)  
+                time.sleep(2)
+                if success:
+                # try:
+                    if tipo_docto_value == 'NFE':
+                        if self.xml_existe == False:
+                            wise_instance.get_xml(cnpj, numerodocto, id_solicitacao)
+                            time.sleep(2)
+                            chave_de_acesso_value = wise_instance.get_valor_chave_acesso()
+                            print(chave_de_acesso_value)
+                            time.sleep(1)
+                            wise_instance.download_nota()
+                            time.sleep(2)
+                    elif tipo_docto_value == 'NFS':
+                        chave_de_acesso_value = None
+                    self.minimize()
+                    time.sleep(2)
+                    empresa_atual = row[2]
+                    self.focus_nbs()
+                    time.sleep(2)
+                    if empresa_atual != empresa_anterior:
+                        self.close_aplications_end()
+                        time.sleep(3)
+                        self.open_application()
+                        self.login()
+                        cod_matriz = row[3]
+                        self.janela_empresa_filial(row[2], row[3])
+                    empresa_anterior = empresa_atual
+                    print(empresa_anterior, empresa_atual)
+                    self.access_contas_a_pagar()
+                    self.janela_entrada(tipo_docto_value)
+                    if tipo_docto_value == 'NFE':
+                        self.importar_xml()
+                        self.abrir_xml(chave_de_acesso_value, numerodocto, id_solicitacao)
+                    contab_descricao_value = row[6]
+                    cod_contab_value = row[7]
+                    total_parcelas_value = row[9]
+                    natureza_financeira_value = row[8]
+                    usa_rateio_centro_custo = row[14] 
+                    valor_sg = row[15] 
+                    id_rateiocc = row[16]
+                    obs = row[17]
+                    cidade_cliente = row[19]
+                    rateios_aut = database.consultar_rateio_aut(id_rateiocc)
+                    boletos = database.consultar_boleto(id_solicitacao)
+                    rateios = database.consultar_rateio(id_solicitacao)
+                    num_parcelas = database.numero_parcelas(id_solicitacao, numerodocto)
+                    # numeroos = row[11]
+                    terceiro = row[12]
+                    estado = row[13]
+                    time.sleep(3)
+                    self.janela_cadastro_nf(cnpj, numerodocto, serie_value, data_emissao_value, tipo_docto_value, valor_value, contab_descricao_value, total_parcelas_value, tipo_pagamento_value, natureza_financeira_value, numeroos, terceiro, estado, usa_rateio_centro_custo, valor_sg, rateios, rateios_aut, inss, irff, piscofinscsl, iss, vencimento_value, obs, cod_contab_value, boletos, num_parcelas, id_solicitacao, chave_de_acesso_value, cod_matriz, cidade_cliente, empresa_atual)
+                    self.janela_imprimir_nota()
+                    self.janela_secundario_imprimir_nota()
+                    self.extract_pdf()
+                    self.save_as(numerodocto, id_solicitacao)
+                    self.close_extract_pdf_window()
+                    time.sleep(2)
+                    self.click_on_cancel()
+                    self.janela_valores()
+                    time.sleep(2)
+                    num_controle = self.get_controle_value()
+                    time.sleep(2)
+                    print(num_controle)
+                    time.sleep(5)
+                    wise_instance.Anexar_AP(id_solicitacao, num_controle, numerodocto, serie_value)
+                    time.sleep(2)
+                    wise_instance.get_pdf_file(numerodocto, id_solicitacao)
+                    time.sleep(4)
+                    wise_instance.confirm()
+                    time.sleep(3)
+                    # send_mail.enviar_email(id_solicitacao, numerodocto)
+                    time.sleep(4)
+                    self.back_to_nbs()
+                    time.sleep(2)
+                    self.close_aplications_half()
+                    time.sleep(1)
+                    self.send_success_message(id_solicitacao, numerodocto, tipo_docto_value)
+                    time.sleep(3)
+                    self.delete_attempt_file(id_solicitacao, numerodocto)
+                    time.sleep(2)
+                    database.atualizar_anexosolicitacaogasto(numerodocto, id_solicitacao)
+                    # except:
+                    #     self.send_message_with_traceback(id_solicitacao, numerodocto)
+                else:
+                    self.send_message_pre_verification(message, id_solicitacao, numerodocto)
+                    database.autoriza_rpa_para_r(id_solicitacao)
+                    time.sleep(2)
+                    self.back_to_nbs()
+            else:
+                database.autoriza_rpa_para_r(id_solicitacao)
+                time.sleep(2)
+                self.send_failure_try_message(id_solicitacao, numerodocto)
+                self.delete_attempt_file(id_solicitacao, numerodocto)
+
+
+
             
 rpa = NbsRpa()
 rpa.funcao_main()
