@@ -14,6 +14,8 @@ from selenium.webdriver.support import expected_conditions as EC
 import os
 from pathlib import Path
 import xml.etree.ElementTree as ET
+import requests
+import database
 
 class Wise():
     def __init__(self):
@@ -163,12 +165,13 @@ class Wise():
             # self.reload_page()
             controles = WebDriverWait(self.driver, 60).until(EC.presence_of_all_elements_located((By.NAME, "numeroControle")))
             todos_preenchidos = all(controle.get_attribute('value') != "" for controle in controles if controle.is_displayed())
+            time.sleep(1)
             pyautogui.scroll(1000)
             time.sleep(2)
             if todos_preenchidos:
                 botao_confirmar = WebDriverWait(self.driver, 60).until(EC.element_to_be_clickable((By.XPATH, "//button[contains(@title, 'Confirma Lançamento no ERP')]")))
+                time.sleep(2)
                 # self.driver.execute_script("arguments[0].scrollIntoView();", botao_confirmar)
-                
                 botao_confirmar.click()
                 time.sleep(3)
                 confirmar = r"C:\Users\user\Documents\RPA_Project\imagens\Confirmar.PNG"
@@ -178,6 +181,17 @@ class Wise():
                 print("Nem todos os controles estão preenchidos. Não foi possível confirmar.")
                 
     def click_specific_button_wise(self, button_image_path, confidence_level=0.8):
+        button_location = pyautogui.locateOnScreen(button_image_path, confidence=confidence_level)
+        if button_location:
+            button_x, button_y, button_width, button_height = button_location
+            button_center_x = button_x + button_width // 2
+            button_center_y = button_y + button_height // 2
+            pyautogui.click(button_center_x, button_center_y)
+            print("Botão clicado!")
+        else:
+            print("Botão não encontrado.")
+
+    def click_specific_button_wise_1(self, button_image_path, confidence_level=0.9):
         button_location = pyautogui.locateOnScreen(button_image_path, confidence=confidence_level)
         if button_location:
             button_x, button_y, button_width, button_height = button_location
@@ -229,6 +243,12 @@ class Wise():
                 link_element.click()
                 break
         time.sleep(4)
+        fechar_popup = r"C:\Users\user\Documents\RPA_Project\imagens\fechar_popup.PNG" 
+        self.click_specific_button_wise_1(fechar_popup)
+        time.sleep(2)
+        fechar_popup_2 = r"C:\Users\user\Documents\RPA_Project\imagens\fechar_popup_2.PNG" 
+        self.click_specific_button_wise_1(fechar_popup_2)
+        time.sleep(2)
         download = r"C:\Users\user\Documents\RPA_Project\imagens\download.PNG" 
         self.click_specific_button_wise(download)
         time.sleep(2)
@@ -292,7 +312,7 @@ class Wise():
             self.driver.refresh()
             time.sleep(3)
 
-    def get_xml(self, chave_acesso):
+    def get_xml(self, cnpj, num_nota, id_solicitacao):
         self.reload_page()
         if self.driver:
             self.driver.get("https://hub.sieg.com/")
@@ -317,21 +337,73 @@ class Wise():
             botao_opcoes = WebDriverWait(self.driver, 60).until(EC.element_to_be_clickable((By.ID, "btnOptions")))
             botao_opcoes.click()
             time.sleep(2)
+
+            campo_cnpj = WebDriverWait(self.driver, 30).until(
+                EC.visibility_of_element_located((By.ID, "cnpjEmitDownload"))
+            )
+            campo_cnpj.send_keys(cnpj) 
+
+            campo_numero = WebDriverWait(self.driver, 30).until(
+                EC.visibility_of_element_located((By.ID, "numberXml"))
+            )
+            campo_numero.send_keys(num_nota)
             campo_texto = WebDriverWait(self.driver, 60).until(EC.presence_of_element_located((By.ID, "xmlKeyDownload")))
-            campo_texto.send_keys(chave_acesso)
+            # campo_texto.send_keys(chave_acesso)
             time.sleep(2)
             botao_pesquisar = WebDriverWait(self.driver, 60).until(EC.element_to_be_clickable((By.XPATH, "//a[contains(@onclick, 'SearchXmlDownload')]")))
             botao_pesquisar.click()
             time.sleep(2)
             try:
-                botao_detalhes = WebDriverWait(self.driver, 20).until(EC.element_to_be_clickable((By.CLASS_NAME, "btnDetailsXml")))
+                botao_detalhes = WebDriverWait(self.driver, 30).until(EC.element_to_be_clickable((By.CLASS_NAME, "btnDetailsXml")))
                 botao_detalhes.click()
             except:
                 self.fechar_aba()
+                self.send_message_case_not_sieg(id_solicitacao, num_nota)
+                database.autoriza_rpa_para_n(id_solicitacao)
+            time.sleep(3)
+            # valor_chave_acesso = WebDriverWait(self.driver, 20).until(
+            #     EC.presence_of_element_located((By.ID, "xmlKey"))
+            # ).text
+            # print(valor_chave_acesso)
+            # print(self.get_valor_chave_acesso())
+            # botao_download = WebDriverWait(self.driver, 60).until(EC.element_to_be_clickable((By.ID, "btnDownloadXmlHub")))
+            # botao_download.click()
+
+    def send_message_case_not_sieg(self, id_solicitacao, numero_nota):
+        chat_ids_results = database.consultar_chat_id()
+        token_result = database.consultar_token_bot()
+
+        chat_ids = [result[0] for result in chat_ids_results]
+
+        token = token_result[0][0]
+        success_msg = f"Nota nao encontrada no SIEG, id solicitacao: {id_solicitacao}, numero da nota: {numero_nota}"
+        
+        base_url = f"https://api.telegram.org/bot{token}/sendMessage"
+
+        for chat_id in chat_ids:
+            payload = {
+                'chat_id': chat_id,
+                'text': success_msg
+            }
+            response = requests.post(base_url, data=payload)
+            if response.status_code != 200:
+                print(f"Failed to send success message to chat_id {chat_id}. Response: {response.content}")
+            else:
+                print(f"Success message sent successfully to chat_id {chat_id} on Telegram!")
+
+    def get_valor_chave_acesso(self):
+        if self.driver:
             time.sleep(2)
+            valor_chave_acesso = WebDriverWait(self.driver, 20).until(
+                EC.presence_of_element_located((By.ID, "xmlKey"))
+            ).text
+        return valor_chave_acesso
+            
+    
+    def download_nota(self):
+        if self.driver:
             botao_download = WebDriverWait(self.driver, 60).until(EC.element_to_be_clickable((By.ID, "btnDownloadXmlHub")))
             botao_download.click()
-
 
     def rename_last_downloaded_file(self, num_nota, num_solicitacao, download_folder=None):
         if download_folder is None:
@@ -368,7 +440,6 @@ class Wise():
     #         return False  # O arquivo existe, mas não está bem formado
 
 
-# wise = Wise()
 # teste = wise.check_if_file_exists_in_downloads('1','2')
 # print(teste)
 # wise.get_nf_values('109965','149495')
