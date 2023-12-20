@@ -62,13 +62,15 @@ def consultar_dados_cadastro():
 --                AND sg.formapagamento  = 'B'
                 AND rc.id = sg.idcontabilizacaopadrao 
                 AND nf.id = sg.idNaturezaFinanceira
-                AND autorizaRpa = 'S'
-                and a.tipodoctonota = 'NFS'
-                AND (a.notacaptadarpa = 'N' or a.notacaptadarpa is null)
-             ORDER BY
+                AND autorizaRpa ='S'
+                and a.tipodoctonota in ('NFS','NFE')
+                -- and sg.id = '152318'
+                AND (a.notacaptadarpa = 'N' or a.notacaptadarpa is null or a.notacaptadarpa = 'E')
+               --  and sg.id in (149720, 150784, 151248, 151123, 151000, 151036, 151243, 151158, 151158, 151191, 151244, 151246, 151239, 150120, 150120)
+            ORDER BY
 				CASE 
-	                WHEN sg.formapagamento = 'B' THEN (select datavencimento from anexosolicitacaogasto where desconsiderAranexo = 'N' AND tipo = 'Boleto' AND (notacaptadarpa = 'N' or notacaptadarpa is null ) and idSolicitacaoGasto = sg.id limit 1)
-                 	WHEN sg.formapagamento != 'B' THEN (select datavencimento from anexosolicitacaogasto where desconsiderAranexo = 'N' and (tipo = 'DANFE' OR tipo = 'DANFE-ADTO') AND (notacaptadarpa = 'N' or notacaptadarpa is null ) and idSolicitacaoGasto = sg.id limit 1)
+	                WHEN sg.formapagamento = 'B' THEN (select datavencimento from anexosolicitacaogasto where desconsiderAranexo = 'N' AND tipo = 'Boleto' AND (notacaptadarpa = 'N' or notacaptadarpa is null or notacaptadarpa = 'E') and idSolicitacaoGasto = sg.id limit 1)
+                 	WHEN sg.formapagamento != 'B' THEN (select datavencimento from anexosolicitacaogasto where desconsiderAranexo = 'N' and (tipo = 'DANFE' OR tipo = 'DANFE-ADTO') AND (notacaptadarpa = 'N' or notacaptadarpa is null or notacaptadarpa = 'E') and idSolicitacaoGasto = sg.id limit 1)
                 else null END
                 , sg.id
                 , empresa
@@ -101,7 +103,7 @@ def consultar_nota_fiscal(id_solicitacao):
                 idSolicitacaoGasto = %s
                 AND desconsiderAranexo = 'N'
                 AND (tipo = 'DANFE' OR tipo = 'DANFE-ADTO')
-                AND (notacaptadarpa = 'N' or notacaptadarpa is null)
+                AND (notacaptadarpa = 'N' or notacaptadarpa is null or notacaptadarpa = 'E')
             """
         cursor.execute(consulta, (id_solicitacao,))
         resultados = cursor.fetchall()
@@ -125,7 +127,7 @@ def consultar_boleto(id_solicitacao):
                 AND tipo = 'Boleto'
                 AND (notacaptadarpa = 'N' or notacaptadarpa is null)
             order by 
-                anexoSolicitacaoGasto.datavencimento 
+                anexoSolicitacaoGasto.datavencimento asc
             """
         cursor.execute(consulta, (id_solicitacao,))
         resultados = cursor.fetchall()
@@ -133,8 +135,92 @@ def consultar_boleto(id_solicitacao):
         conn.close()
 
         return resultados
+    
+def atualizar_boletos_vencidos(id_solicitacao):
+    conn = conectar_banco_dados()
+    if conn is not None:
+        try:
+            cursor = conn.cursor()
 
-def atualizar_anexosolicitacaogasto(numerodocto):
+            update_query = """
+                UPDATE anexoSolicitacaoGasto
+                SET datavencimento = CURRENT_DATE + INTERVAL '1 days'
+                WHERE idSolicitacaoGasto = %s
+                    AND desconsiderAranexo = 'N'
+                    AND tipo = 'Boleto'
+                    AND (notacaptadarpa = 'N' or notacaptadarpa is null)
+                    AND datavencimento < CURRENT_DATE
+            """
+
+            cursor.execute(update_query, (id_solicitacao,))
+            conn.commit()
+
+            print("Boletos vencidos atualizados com sucesso.")
+        except Exception as e:
+            print(f"Erro ao atualizar boletos vencidos: {e}")
+        finally:
+            cursor.close()
+            conn.close()
+
+def atualizar_notas_vencidas(id_solicitacao):
+    conn = conectar_banco_dados()
+    if conn is not None:
+        try:
+            cursor = conn.cursor()
+
+            update_query = """
+            UPDATE anexoSolicitacaoGasto
+            SET datavencimento = CURRENT_DATE + INTERVAL '1 days'
+            WHERE idSolicitacaoGasto = %s
+                AND desconsiderAranexo = 'N'
+                AND tipo = 'DANFE'
+                AND (notacaptadarpa = 'N' or notacaptadarpa is null)
+                AND datavencimento < CURRENT_DATE
+            """
+
+            cursor.execute(update_query, (id_solicitacao,))
+            conn.commit()
+
+            print("Notas vencidas atualizados com sucesso.")
+        except Exception as e:
+            print(f"Erro ao atualizar Notas vencidas: {e}")
+        finally:
+            cursor.close()
+            conn.close()
+
+# atualizar_notas_vencidas('151521')
+    
+
+def atualizar_adtos_vencidos(id_solicitacao):
+    conn = conectar_banco_dados()
+    if conn is not None:
+        try:
+            cursor = conn.cursor()
+
+            update_query = """
+                UPDATE anexoSolicitacaoGasto
+                SET datavencimento = current_date + INTERVAL '10 days'
+                FROM solicitacaoGasto AS sg
+                WHERE anexoSolicitacaoGasto.idSolicitacaoGasto = sg.id
+                    AND anexoSolicitacaoGasto.idSolicitacaoGasto = %s
+                    AND anexoSolicitacaoGasto.desconsiderAranexo = 'N'
+                    AND anexoSolicitacaoGasto.tipo = 'DANFE-ADTO'
+                    AND (anexoSolicitacaoGasto.notacaptadarpa = 'N' or anexoSolicitacaoGasto.notacaptadarpa is null)
+                    -- AND anexoSolicitacaoGasto.datavencimento < CURRENT_DATE
+            """
+
+            cursor.execute(update_query, (id_solicitacao,))
+            conn.commit()
+
+            print("Adiantamentos vencidos atualizados com sucesso.")
+        except Exception as e:
+            print(f"Erro ao atualizar Adiantamentos vencidos: {e}")
+        finally:
+            cursor.close()
+            conn.close()
+# atualizar_adtos_vencidos('151521')
+
+def atualizar_anexosolicitacaogasto(numerodocto, id_solicitacao):
     conn = conectar_banco_dados()
     if conn is not None:
         cursor = conn.cursor()
@@ -145,14 +231,16 @@ def atualizar_anexosolicitacaogasto(numerodocto):
                 notacaptadarpa = 'S'
             WHERE 
                 numerodocto = %s
+                and idsolicitacaogasto = %s
                 AND desconsiderAranexo = 'N'
                 AND (tipo = 'DANFE' OR tipo = 'DANFE-ADTO')
         """
-        cursor.execute(update, (numerodocto,))
+        cursor.execute(update, (numerodocto, id_solicitacao))
         conn.commit()
         cursor.close()
         conn.close()
         print("Atualização realizada com sucesso.")
+            
 
 def consultar_rateio(id_solicitacao):
     conn = conectar_banco_dados()
@@ -242,6 +330,25 @@ def autoriza_rpa_para_n(id_solicitacao):
         print("Atualização realizada com sucesso.")
 
 
+def autoriza_rpa_para_r(id_solicitacao):
+    conn = conectar_banco_dados()
+    if conn is not None:
+        cursor = conn.cursor()
+        update = """
+            UPDATE 
+                solicitacaoGasto
+            SET 
+                autorizaRpa = 'R'
+            WHERE 
+                solicitacaoGasto.id = %s
+        """
+        cursor.execute(update, (id_solicitacao,))
+        conn.commit()
+        cursor.close()
+        conn.close()
+        print("Atualização realizada com sucesso.")
+
+
 def consultar_chat_id():
     conn = conectar_banco_dados()
     if conn is not None:
@@ -274,6 +381,26 @@ def consultar_chat_id_dev():
             where 
                 login in ('rpa')
         """
+        cursor.execute(query)
+        resultados = cursor.fetchall()
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return resultados
+
+def consultar_chat_id_prod():
+    conn = conectar_banco_dados()
+    if conn is not None:
+        cursor = conn.cursor()
+        query = """
+            select 
+                idchattelegram 
+            from 
+                usuario 
+            where 
+                login in ('Daniel','rpa')
+        """
+
         cursor.execute(query)
         resultados = cursor.fetchall()
         # print("Resultados da consulta:", resultados)
