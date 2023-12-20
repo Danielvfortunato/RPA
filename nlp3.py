@@ -6,6 +6,11 @@ from nltk.tokenize import word_tokenize
 from nltk.stem import RSLPStemmer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+from pdf2image import convert_from_path
+from PIL import Image
+from pytesseract import pytesseract
+import os
+import io
 
 stop_words = set(stopwords.words('portuguese'))
 stemmer = RSLPStemmer()
@@ -59,8 +64,28 @@ def get_jaccard_sim(str1, str2):
     c = a.intersection(b)
     return float(len(c)) / (len(a) + len(b) - len(c))
 
+
+def extrair_texto_de_pdf(caminho_pdf):
+    pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+    texto_total = ""
+
+    # Converter cada página do PDF em imagens
+    imagens = convert_from_path(caminho_pdf)
+
+    for imagem in imagens:
+        # Extrair texto da imagem
+        texto = pytesseract.image_to_string(imagem)
+        if texto:
+            texto_total += texto + '\n'
+
+    return texto_total
+
+# print(extrair_texto_de_pdf(r"C:\Users\user\Documents\APs\nota_38947152061.pdf"))
+
+
 def get_best_match_code(num_docto, id_solicitacao):
     caminho_pdf = rf"C:\Users\user\Documents\APs\nota_{num_docto}{id_solicitacao}.pdf"
+    # print(caminho_pdf)
     
     texto_total = ""
     try:
@@ -69,9 +94,15 @@ def get_best_match_code(num_docto, id_solicitacao):
                 texto = pagina.extract_text()
                 if texto:
                     texto_total += texto + '\n'
-    except Exception as e:
-        print(f"Erro ao ler o PDF: {e}")
-        return None
+    except:
+        # print(f"Erro ao ler o PDF com pdfplumber: {e}")
+        # Tenta extrair o texto com Tesseract OCR
+        texto_total = extrair_texto_de_pdf(caminho_pdf)
+        print(texto_total)
+        if not texto_total:
+            print("Erro ao extrair texto com Tesseract OCR")
+            return None
+    # print(texto_total)
 
     # Pré-processando o texto do PDF da nota
     text_from_pdf = preprocess_text(texto_total)
@@ -84,9 +115,9 @@ def get_best_match_code(num_docto, id_solicitacao):
     tokens_from_pdf = text_from_pdf.split()
     filtered_tokens = [token for token in tokens_from_pdf if any(token in desc for desc in descriptions)]
 
-    if not filtered_tokens:
-        print("Nenhum termo relevante encontrado no PDF.")
-        return None
+    # if not filtered_tokens:
+    #     print("Nenhum termo relevante encontrado no PDF.")
+    #     return None
 
     filtered_text_from_pdf = ' '.join(filtered_tokens)
     # print(filtered_text_from_pdf)
@@ -110,34 +141,37 @@ def get_child_codes(parent_code):
 
 def refine_best_match_code(num_docto, id_solicitacao):
     best_code = get_best_match_code(num_docto, id_solicitacao)
+    if best_code:
     
-    # Se for um código "pai" com apenas 1 ou 2 caracteres
-    if len(best_code) in [1, 2]:
-        # Pegue somente os filhos desse código
-        data_subset = get_child_codes(best_code)
+        # Se for um código "pai" com apenas 1 ou 2 caracteres
+        if len(best_code) in [1, 2]:
+            # Pegue somente os filhos desse código
+            data_subset = get_child_codes(best_code)
+            
+            # E faça uma reanálise somente com os filhos
+            descriptions_subset = [item['descricao'] for item in data_subset]
+            
+            # Verifique se existe uma descrição válida para processar
+            if not descriptions_subset:
+                print("Não foram encontradas descrições válidas para o código pai.")
+                return None
+            
+            tfidf_matrix_subset = vectorizer.fit_transform([preprocess_text(num_docto)] + descriptions_subset)
+            cosine_similarities_subset = cosine_similarity(tfidf_matrix_subset[0:1], tfidf_matrix_subset[1:]).flatten()
+            
+            # Similaridade Jaccard
+            jaccard_scores_subset = [get_jaccard_sim(preprocess_text(num_docto), desc) for desc in descriptions_subset]
+            avg_scores_subset = [0.6*cos + 0.4*jac for cos, jac in zip(cosine_similarities_subset, jaccard_scores_subset)]
+            
+            best_match_idx_subset = avg_scores_subset.index(max(avg_scores_subset))
+            
+            return data_subset[best_match_idx_subset]['codigo']
         
-        # E faça uma reanálise somente com os filhos
-        descriptions_subset = [item['descricao'] for item in data_subset]
-        
-        # Verifique se existe uma descrição válida para processar
-        if not descriptions_subset:
-            print("Não foram encontradas descrições válidas para o código pai.")
-            return None
-        
-        tfidf_matrix_subset = vectorizer.fit_transform([preprocess_text(num_docto)] + descriptions_subset)
-        cosine_similarities_subset = cosine_similarity(tfidf_matrix_subset[0:1], tfidf_matrix_subset[1:]).flatten()
-        
-        # Similaridade Jaccard
-        jaccard_scores_subset = [get_jaccard_sim(preprocess_text(num_docto), desc) for desc in descriptions_subset]
-        avg_scores_subset = [0.6*cos + 0.4*jac for cos, jac in zip(cosine_similarities_subset, jaccard_scores_subset)]
-        
-        best_match_idx_subset = avg_scores_subset.index(max(avg_scores_subset))
-        
-        return data_subset[best_match_idx_subset]['codigo']
-    
+        else:
+            # Se já for um código filho, retorne diretamente
+            return best_code
     else:
-        # Se já for um código filho, retorne diretamente
-        return best_code
+        return None
 
-# result = refine_best_match_code('1', '00')
+# result = refine_best_match_code('3', '8947152061')
 # print(result)
