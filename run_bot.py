@@ -15,13 +15,30 @@ def capture_screen():
     screenshot_bytes.seek(0)
     return screenshot_bytes
 
+# def send_message_with_screenshot(error_message, screenshot_bytes):
+#     chat_ids_results = database.consultar_chat_id_pamela()
+#     token_result = database.consultar_token_bot()
+#     chat_ids = [result[0] for result in chat_ids_results]
+#     token = token_result[0][0]
+#     base_url = f"https://api.telegram.org/bot{token}/sendPhoto"
+#     for chat_id in chat_ids:
+#         files = {'photo': screenshot_bytes}
+#         data = {'chat_id': chat_id, 'caption': error_message}
+#         response = requests.post(base_url, files=files, data=data)
+#         if response.status_code != 200:
+#             print(f"Failed to send message to chat_id {chat_id}. Response: {response.content}")
+#         else:
+#             print(f"Message sent successfully to chat_id {chat_id} on Telegram!")
+
 def send_message_with_screenshot(error_message, screenshot_bytes):
-    chat_ids_results = database.consultar_chat_id_dev()
+    chat_ids_results = database.consultar_chat_id_pamela()
     token_result = database.consultar_token_bot()
     chat_ids = [result[0] for result in chat_ids_results]
     token = token_result[0][0]
     base_url = f"https://api.telegram.org/bot{token}/sendPhoto"
     for chat_id in chat_ids:
+        # Resetar o cursor para o início do stream antes de cada envio
+        screenshot_bytes.seek(0)
         files = {'photo': screenshot_bytes}
         data = {'chat_id': chat_id, 'caption': error_message}
         response = requests.post(base_url, files=files, data=data)
@@ -48,11 +65,11 @@ def is_within_blocked_time():
             return True
     return False
 
+
 def run_script():
-    # if not is_within_blocked_time():
     if not check_if_process_running('main.py'):
         print('main.py is not running. Attempting to start it.')
-        
+
         if check_if_process_running('SisFin.exe'):
             subprocess.run(['taskkill', '/F', '/IM', 'SisFin.exe'])
             time.sleep(3)
@@ -63,25 +80,24 @@ def run_script():
         process = subprocess.Popen(['python', r'C:\Users\user\Documents\rpa_Project\main.py'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = process.communicate()
 
-        if process.returncode != 0:
-            try:
-                # Tentativa de decodificação com UTF-8
-                stderr_decoded = stderr.decode('utf-8')
-            except UnicodeDecodeError:
-                # Se falhar, tenta decodificar com 'cp1252' ou outro codec apropriado
-                stderr_decoded = stderr.decode('cp1252', errors='ignore')
+    if process.returncode != 0:
+        try:
+            # Open the file with 'replace' error handler to manage encoding errors
+            with open('info.txt', 'r', encoding='utf-8', errors='replace') as file:
+                line = file.readline()
+                id_solicitacao, numerodocto = line.strip().split(',')
 
-            # Extraíndo apenas o traceback
-            traceback_lines = stderr_decoded.splitlines()
-            traceback_info = "\n".join(traceback_lines[-10:])  # Ajuste o número de linhas conforme necessário
-            print(f"Erro detectado em main.py: {traceback_info}")
+            error_message = (f"Erro detectado em main.py:\nID Solicitacao: {id_solicitacao}\nNumero Docto: {numerodocto}\n" +
+                             f"{stderr.decode('utf-8', errors='replace')[:500]}...")
             screenshot = capture_screen()
-            # Limitando a mensagem a 1024 caracteres
-            error_message = f"Erro detectado em main.py:\n{traceback_info[:500]}..."
             send_message_with_screenshot(error_message, screenshot)
+        except Exception as e:
+            print(f"Erro ao ler o arquivo de informações: {e}")
+
 
     else:
         print('main.py is already running. Doing nothing.')
+
 
 if __name__ == "__main__":
     while True:
