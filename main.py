@@ -490,7 +490,7 @@ class NbsRpa():
                 regime_norma.click_input()
             time.sleep(2)
 
-        natureza_financeira_list = ['ALUGUEIS A PAGAR', 'COMBUSTÍVEIS/ LUBRIFICANTES', 'CUSTO COMBUSTIVEL NOVOS', 'CUSTO DESPACHANTE NOVOS', 'CUSTO FRETE NOVOS', 'CUSTO NOVOS', 'CUSTO OFICINA', 'DESP DESPACHANTE NOVOS', 'DESP FRETE VEIC NOVOS', 'DESP. COM SERVICOS DE OFICINA', 'DESPESA COM LAVACAO', 'DESPESA OFICINA', 'ENERGIA ELETRICA', 'FRETE', 'HONORARIO PESSOA JURIDICA', 'INFORMATICA HARDWARE', 'INFORMATICA SOFTWARE', 'INTERNET', 'MANUT. E CONSERV. DE', 'MATERIAL DE OFICINA DESPESA', 'PONTO ELETRONICO RA', 'SALARIO ERIBERTO', 'SALARIO MAGU', 'SALARIO VIVIANE', 'SALARIOS RA', 'SERVICO DE TERCEIROS FUNILARIA', 'SERVICOS DE TERCEIRO OFICINA', 'SOFTWARE', 'VALE TRANSPORTE RA', 'VD SALARIO', 'VD VEICULOS NOVOS', 'VIAGENS E ESTADIAS', 'AÇÕES EXTERNAS', 'AÇÕES LOJA', 'ADESIVOS', 'AGENCIA', 'BRINDES E CORTESIAS', 'DECORAÇÃO', 'DESENSOLVIMENTO SITE', 'DESP MKT CHERY FLORIPA', 'DISPARO SMS/WHATS', 'EVENTOS', 'EXPOSITORES', 'FACEBOOK', 'FACEBOOK/INSTAGRAM', 'FEE MENSAL', 'FEIRA/EVENTOS', 'FEIRAO', 'FOLLOWISE (MKT)', 'GOOGLE', 'INFLUENCIADORES', 'INSTITUCIONAL', 'INTEGRADOR (MKT)', 'JORNAL', 'LANCAMENTOS', 'LED', 'MARKETING', 'MERCADO LIVRE', 'MIDIA ON OUTROS', 'MIDIA/ONLINE', 'MKT', 'OUTDOOR', 'PANFLETOS', 'PATROCINIO', 'PORTAL GERACAO', 'PROSPECÇÃO', 'PUBLICIDADE E PROPAGANDA', 'RADIO', 'RD (MKT)', 'REGISTRO SITE', 'SISTEMAS (MKT)', 'SYONET AUTOMOVEIS', 'TELEVISAO', 'VENDAS EXTERNAS', 'VIDEOS', 'VITRINE', 'WISE (MKT)']
+        natureza_financeira_list = ['ALUGUEIS A PAGAR', 'COMBUSTIVEIS/ LUBRIFICANTES', 'CUSTO COMBUSTIVEL NOVOS', 'CUSTO DESPACHANTE NOVOS', 'CUSTO FRETE NOVOS', 'CUSTO NOVOS', 'CUSTO OFICINA', 'DESP DESPACHANTE NOVOS', 'DESP FRETE VEIC NOVOS', 'DESP. COM SERVICOS DE OFICINA', 'DESPESA COM LAVACAO', 'DESPESA OFICINA', 'ENERGIA ELETRICA', 'FRETE', 'HONORARIO PESSOA JURIDICA', 'INFORMATICA HARDWARE', 'INFORMATICA SOFTWARE', 'INTERNET', 'MANUT. E CONSERV. DE', 'MATERIAL DE OFICINA DESPESA', 'PONTO ELETRONICO RA', 'SALARIO ERIBERTO', 'SALARIO MAGU', 'SALARIO VIVIANE', 'SALARIOS RA', 'SERVICO DE TERCEIROS FUNILARIA', 'SERVICOS DE TERCEIRO OFICINA', 'SOFTWARE', 'VALE TRANSPORTE RA', 'VD SALARIO', 'VD VEICULOS NOVOS', 'VIAGENS E ESTADIAS', 'AÇÕES EXTERNAS', 'AÇÕES LOJA', 'ADESIVOS', 'AGENCIA', 'BRINDES E CORTESIAS', 'DECORAÇÃO', 'DESENSOLVIMENTO SITE', 'DESP MKT CHERY FLORIPA', 'DISPARO SMS/WHATS', 'EVENTOS', 'EXPOSITORES', 'FACEBOOK', 'FACEBOOK/INSTAGRAM', 'FEE MENSAL', 'FEIRA/EVENTOS', 'OUTROS EVENTOS', 'FEIRAO', 'FOLLOWISE (MKT)', 'GOOGLE', 'INFLUENCIADORES', 'INSTITUCIONAL', 'INTEGRADOR (MKT)', 'JORNAL', 'LANCAMENTOS', 'LED', 'MARKETING', 'MERCADO LIVRE', 'MIDIA ON OUTROS', 'MIDIA/ONLINE', 'MKT', 'OUTDOOR', 'PANFLETOS', 'PATROCINIO', 'PORTAL GERACAO', 'PROSPECÇÃO', 'PUBLICIDADE E PROPAGANDA', 'RADIO', 'RD (MKT)', 'REGISTRO SITE', 'SISTEMAS (MKT)', 'SYONET AUTOMOVEIS', 'TELEVISAO', 'VENDAS EXTERNAS', 'VIDEOS', 'VITRINE', 'WISE (MKT)']
         if not any(r[0] == "2" for r in rateios) and not any(r[0] == "2" for r in rateios_aut):
             # print('nao existe centro custo 2')
             if natureza_financeira_value in natureza_financeira_list:
@@ -501,8 +501,10 @@ class NbsRpa():
                 except TimeoutError as e:
                     print(str(e))
                     return
+                time.sleep(3)
                 check_pis_cofins.click_input()
                 # time.sleep(2)
+                time.sleep(2)
                 tab_natureza_credito = janela.child_window(title='Natureza Créditos Pis/Cofins', control_type='TabItem')
                 try:
                     self.wait_until_interactive(tab_natureza_credito)
@@ -1490,7 +1492,7 @@ class NbsRpa():
         year = int(str_num[4:])
         return datetime.date(year, month, day) 
         
-    def check_conditions(self, tipo_docto,serie, natureza, vencimento, inss, irff, piscofinscsl, tipo_pagamento, icms, boletos, cod_nfse, os, iss_value):
+    def check_conditions(self, tipo_docto, natureza, vencimento, inss, irff, piscofinscsl, tipo_pagamento, icms, boletos, cod_nfse, os, iss_value):
         current_date = datetime.date.today()
         converted_vencimento = self.convert_to_date(vencimento)
         # if tipo_docto != "NFE":
@@ -2559,13 +2561,9 @@ class NbsRpa():
         path = r"C:\Users\user\Documents\rpa_project\tentativas"
         filename = f"{id_solicitacao}_{numerodocto}_attempts.txt"
         filepath = os.path.join(path, filename)
-        try:
-            os.remove(filepath)
-            print(f"Arquivo {filepath} deletado com sucesso.")
-        except FileNotFoundError:
-            print(f"Arquivo {filepath} não encontrado. Nada a deletar.")
-        except Exception as e:
-            print(f"Erro ao deletar o arquivo {filepath}: {e}")
+        os.remove(filepath)
+        print(f"Arquivo {filepath} deletado com sucesso.")
+
 
 
     def is_within_blocked_time(self):
@@ -2580,10 +2578,17 @@ class NbsRpa():
                 return True
         return False
     
+
     def funcao_main(self):
         registros = database.consultar_dados_cadastro()
         empresa_anterior = None
         for row in registros:
+            dir_path = os.path.dirname(os.path.realpath(__file__))
+            info_file_path = os.path.join(dir_path, 'info.txt')
+
+            # Removendo o arquivo info.txt se ele existir
+            if os.path.exists(info_file_path):
+                os.remove(info_file_path)
             self.efetivado = False
             # if not self.is_within_blocked_time():
             id_solicitacao = row[0]
@@ -2606,8 +2611,15 @@ class NbsRpa():
                 piscofinscsl = notas_fiscais[0][8]
                 iss = notas_fiscais[0][9]
                 vencimento_value = notas_fiscais[0][4]
+            if os.path.exists(info_file_path):
+                os.remove(info_file_path)
+            time.sleep(2)
+            with open('info.txt', 'w') as file:
+                file.write(f"{id_solicitacao},{numerodocto}\n")
+                file.flush()
+                os.fsync(file.fileno())
             tentativas = self.get_attempt_count(id_solicitacao, numerodocto)
-            if tentativas <= 3:
+            if tentativas <= 2:
                 self.update_attempt_count(id_solicitacao, numerodocto, tentativas + 1)
                 self.existe_xml = False
                 id_empresa = row[18]
@@ -2631,14 +2643,14 @@ class NbsRpa():
                     cod_nfse = self.get_codigo_from_pdf(numerodocto, id_solicitacao)
                 except:
                     cod_nfse = None
-                serie_nota = self.get_serie(numerodocto, id_solicitacao)
+                # serie_nota = self.get_serie(numerodocto, id_solicitacao)
                 pdf_inteiro = self.extract_text_from_pdf(numerodocto, id_solicitacao)
                 natureza_value = self.find_isolated_5102(pdf_inteiro)
                 icms = self.get_valor_icms(numerodocto, id_solicitacao)
                 boletos = database.consultar_boleto(id_solicitacao)
                 cnpj = row[1]
                 time.sleep(1)
-                success, message = self.check_conditions(tipo_docto_value, serie_nota, natureza_value, vencimento_value, inss, irff, piscofinscsl, tipo_pagamento_value, icms, boletos, cod_nfse, numeroos, iss)  
+                success, message = self.check_conditions(tipo_docto_value, natureza_value, vencimento_value, inss, irff, piscofinscsl, tipo_pagamento_value, icms, boletos, cod_nfse, numeroos, iss)  
                 time.sleep(2)
                 if success:
                 # try:
@@ -2715,11 +2727,17 @@ class NbsRpa():
                     time.sleep(2)
                     self.close_aplications_half()
                     time.sleep(1)
-                    self.send_success_message(id_solicitacao, numerodocto, tipo_docto_value)
-                    time.sleep(3)
                     self.delete_attempt_file(id_solicitacao, numerodocto)
                     time.sleep(2)
-                    database.atualizar_anexosolicitacaogasto(numerodocto, id_solicitacao)
+                    registro_existe = database.verificar_dados_cadastro(numerodocto, id_solicitacao)
+                    time.sleep(2)
+                    # if not registro_existe:
+                    ap_existe = rf"C:\Users\user\Documents\APs\AP_{numerodocto}{id_solicitacao}"
+                    if os.path.exists(ap_existe):
+                        database.atualizar_anexosolicitacaogasto(numerodocto, id_solicitacao)
+                        # if registro_existe:
+                    time.sleep(3)
+                    self.send_success_message(id_solicitacao, numerodocto, tipo_docto_value)
                     # except:
                     #     self.send_message_with_traceback(id_solicitacao, numerodocto)
                 else:
@@ -2732,6 +2750,7 @@ class NbsRpa():
                 time.sleep(2)
                 self.send_failure_try_message(id_solicitacao, numerodocto)
                 self.delete_attempt_file(id_solicitacao, numerodocto)
+
 
 
 
