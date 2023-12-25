@@ -63,7 +63,7 @@ def consultar_dados_cadastro():
                 AND rc.id = sg.idcontabilizacaopadrao 
                 AND nf.id = sg.idNaturezaFinanceira
                 AND autorizaRpa ='S'
-                and a.tipodoctonota in ('NFS','NFE')
+                and a.tipodoctonota in ('NFE')
                 -- and sg.id = '152318'
                 AND (a.notacaptadarpa = 'N' or a.notacaptadarpa is null or a.notacaptadarpa = 'E')
                --  and sg.id in (149720, 150784, 151248, 151123, 151000, 151036, 151243, 151158, 151158, 151191, 151244, 151246, 151239, 150120, 150120)
@@ -76,6 +76,53 @@ def consultar_dados_cadastro():
                 , empresa
         """
         cursor.execute(consulta)
+        resultados = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        return resultados
+    
+
+def verificar_dados_cadastro(numerodocto, id_solicitacao):
+    conn = conectar_banco_dados()
+    if conn is not None:
+        cursor = conn.cursor()
+        consulta = """
+            SELECT 
+                sg.id idSolicitacaogasto
+				, a.numerodocto 
+            FROM 
+                solicitacaoGasto sg
+                , cliente cl
+                , empresa ep
+                , rateiocc rc
+                , naturezafinanceira nf
+                , anexosolicitacaogasto a
+            WHERE 
+                sg.aprovado = 'S'
+                AND sg.enviaefetivacao = 'S'
+                AND sg.efetivado = 'N'
+                AND cl.id = sg.idFornecedor
+                and sg.id = a.idsolicitacaogasto
+                AND a.desconsiderAranexo = 'N'
+                AND (a.tipo = 'DANFE' OR a.tipo = 'DANFE-ADTO')
+                AND ep.id = sg.idEmpresa
+                AND sg.formapagamento <> 'Caixa Usado'
+                AND rc.id = sg.idcontabilizacaopadrao 
+                AND nf.id = sg.idNaturezaFinanceira
+                AND autorizaRpa ='S'
+                and a.tipodoctonota in ('NFS','NFE')
+                AND (a.notacaptadarpa = 'N' or a.notacaptadarpa is null or a.notacaptadarpa = 'E')
+                and a.numerodocto = %s
+                and sg.id = %s
+            ORDER BY
+				CASE 
+	                WHEN sg.formapagamento = 'B' THEN (select datavencimento from anexosolicitacaogasto where desconsiderAranexo = 'N' AND tipo = 'Boleto' AND (notacaptadarpa = 'N' or notacaptadarpa is null or notacaptadarpa = 'E') and idSolicitacaoGasto = sg.id limit 1)
+                 	WHEN sg.formapagamento != 'B' THEN (select datavencimento from anexosolicitacaogasto where desconsiderAranexo = 'N' and (tipo = 'DANFE' OR tipo = 'DANFE-ADTO') AND (notacaptadarpa = 'N' or notacaptadarpa is null or notacaptadarpa = 'E') and idSolicitacaoGasto = sg.id limit 1)
+                else null END
+                , sg.id
+                , empresa
+        """
+        cursor.execute(consulta, (numerodocto, id_solicitacao))
         resultados = cursor.fetchall()
         cursor.close()
         conn.close()
@@ -360,6 +407,26 @@ def consultar_chat_id():
                 usuario 
             where 
                 login in ('rpa', 'Pamela', 'geovanna')
+        """
+        cursor.execute(query)
+        resultados = cursor.fetchall()
+        # print("Resultados da consulta:", resultados)
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return resultados
+
+def consultar_chat_id_pamela():
+    conn = conectar_banco_dados()
+    if conn is not None:
+        cursor = conn.cursor()
+        query = """
+            select 
+                idchattelegram 
+            from 
+                usuario 
+            where 
+                login in ('rpa', 'Pamela')
         """
         cursor.execute(query)
         resultados = cursor.fetchall()
