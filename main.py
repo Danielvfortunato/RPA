@@ -490,7 +490,7 @@ class NbsRpa():
                 regime_norma.click_input()
             time.sleep(2)
 
-        natureza_financeira_list = ['ALUGUEIS A PAGAR', 'COMBUSTIVEIS/ LUBRIFICANTES', 'CUSTO COMBUSTIVEL NOVOS', 'CUSTO DESPACHANTE NOVOS', 'CUSTO FRETE NOVOS', 'CUSTO NOVOS', 'CUSTO OFICINA', 'DESP DESPACHANTE NOVOS', 'DESP FRETE VEIC NOVOS', 'DESP. COM SERVICOS DE OFICINA', 'DESPESA COM LAVACAO', 'DESPESA OFICINA', 'ENERGIA ELETRICA', 'FRETE', 'HONORARIO PESSOA JURIDICA', 'INFORMATICA HARDWARE', 'INFORMATICA SOFTWARE', 'INTERNET', 'MANUT. E CONSERV. DE', 'MATERIAL DE OFICINA DESPESA', 'PONTO ELETRONICO RA', 'SALARIO ERIBERTO', 'SALARIO MAGU', 'SALARIO VIVIANE', 'SALARIOS RA', 'SERVICO DE TERCEIROS FUNILARIA', 'SERVICOS DE TERCEIRO OFICINA', 'SOFTWARE', 'VALE TRANSPORTE RA', 'VD SALARIO', 'VD VEICULOS NOVOS', 'VIAGENS E ESTADIAS', 'AÇÕES EXTERNAS', 'AÇÕES LOJA', 'ADESIVOS', 'AGENCIA', 'BRINDES E CORTESIAS', 'DECORAÇÃO', 'DESENSOLVIMENTO SITE', 'DESP MKT CHERY FLORIPA', 'DISPARO SMS/WHATS', 'EVENTOS', 'EXPOSITORES', 'FACEBOOK', 'FACEBOOK/INSTAGRAM', 'FEE MENSAL', 'FEIRA/EVENTOS', 'OUTROS EVENTOS', 'FEIRAO', 'FOLLOWISE (MKT)', 'GOOGLE', 'INFLUENCIADORES', 'INSTITUCIONAL', 'INTEGRADOR (MKT)', 'JORNAL', 'LANCAMENTOS', 'LED', 'MARKETING', 'MERCADO LIVRE', 'MIDIA ON OUTROS', 'MIDIA/ONLINE', 'MKT', 'OUTDOOR', 'PANFLETOS', 'PATROCINIO', 'PORTAL GERACAO', 'PROSPECÇÃO', 'PUBLICIDADE E PROPAGANDA', 'RADIO', 'RD (MKT)', 'REGISTRO SITE', 'SISTEMAS (MKT)', 'SYONET AUTOMOVEIS', 'TELEVISAO', 'VENDAS EXTERNAS', 'VIDEOS', 'VITRINE', 'WISE (MKT)']
+        natureza_financeira_list = ['ALUGUEIS A PAGAR', 'COMBUSTIVEIS/ LUBRIFICANTES', 'CUSTO COMBUSTIVEL NOVOS', 'CUSTO DESPACHANTE NOVOS', 'CUSTO FRETE NOVOS', 'CUSTO NOVOS', 'CUSTO OFICINA', 'DESP DESPACHANTE NOVOS', 'DESP FRETE VEIC NOVOS', 'DESP. COM SERVICOS DE OFICINA', 'DESPESA COM LAVACAO', 'DESPESA OFICINA', 'ENERGIA ELETRICA', 'FRETE', 'HONORARIO PESSOA JURIDICA', 'INFORMATICA HARDWARE', 'INFORMATICA SOFTWARE', 'INTERNET', 'MANUT. E CONSERV. DE', 'MATERIAL DE OFICINA DESPESA', 'PONTO ELETRONICO RA', 'SALARIO ERIBERTO', 'SALARIO MAGU', 'SALARIO VIVIANE', 'SALARIOS RA', 'SERVICO DE TERCEIROS FUNILARIA', 'SERVICOS DE TERCEIRO OFICINA', 'SOFTWARE', 'VALE TRANSPORTE RA', 'VD SALARIO', 'VD VEICULOS NOVOS', 'VIAGENS E ESTADIAS', 'AÇÕES EXTERNAS', 'AÇÕES LOJA', 'ADESIVOS', 'AGENCIA', 'BRINDES E CORTESIAS', 'DECORAÇÃO', 'DESENSOLVIMENTO SITE', 'DESP MKT CHERY FLORIPA', 'DISPARO SMS/WHATS', 'EVENTOS', 'EXPOSITORES', 'FACEBOOK', 'FACEBOOK/INSTAGRAM', 'FEE MENSAL', 'FEIRA/EVENTOS', 'OUTROS EVENTOS', 'OUTROS (MKT)', 'FEIRAO', 'FOLLOWISE (MKT)', 'GOOGLE', 'INFLUENCIADORES', 'INSTITUCIONAL', 'INTEGRADOR (MKT)', 'JORNAL', 'LANCAMENTOS', 'LED', 'MARKETING', 'MERCADO LIVRE', 'MIDIA ON OUTROS', 'MIDIA/ONLINE', 'MKT', 'OUTDOOR', 'PANFLETOS', 'PATROCINIO', 'PORTAL GERACAO', 'PROSPECÇÃO', 'PUBLICIDADE E PROPAGANDA', 'RADIO', 'RD (MKT)', 'REGISTRO SITE', 'SISTEMAS (MKT)', 'SYONET AUTOMOVEIS', 'TELEVISAO', 'VENDAS EXTERNAS', 'VIDEOS', 'VITRINE', 'WISE (MKT)']
         if not any(r[0] == "2" for r in rateios) and not any(r[0] == "2" for r in rateios_aut):
             # print('nao existe centro custo 2')
             if natureza_financeira_value in natureza_financeira_list:
@@ -1015,7 +1015,7 @@ class NbsRpa():
         if not self.esperar_janela_visivel(title, timeout=60):
             print("Falha: Janela de ace viewer não está visível.")
             return
-        time.sleep(2)
+        time.sleep(3)
         try:
             app = Application(backend='uia').connect(title=title)
         except ElementNotFoundError:
@@ -1023,7 +1023,7 @@ class NbsRpa():
             return 
         janela = app[title]
         pyautogui.hotkey('alt', 'f')
-        time.sleep(1)
+        time.sleep(2)
         pyautogui.press('s')
 
     def type_slowly(self, element, text, delay=0.3):
@@ -1075,7 +1075,7 @@ class NbsRpa():
         time.sleep(1)
         for _ in range(2):
             pyautogui.press('down')
-            time.sleep(0.5)
+            time.sleep(1)
         pyautogui.press('enter')
         for _ in range(2):
             pyautogui.press('enter')
@@ -1597,6 +1597,30 @@ class NbsRpa():
             else:
                 print(f"Success message sent successfully to chat_id {chat_id} on Telegram!")
 
+    def send_ap_nao_existe_message(self, id_solicitacao, numero_nota, tipo_nota):
+        chat_ids_results = database.consultar_chat_id_dev()
+        token_result = database.consultar_token_bot()
+
+        # chat_id1, chat_id2 = chat_ids_results[0][0], chat_ids_results[1][0]
+        # chat_ids = [chat_id1, chat_id2]
+        chat_ids = [result[0] for result in chat_ids_results]
+
+        token = token_result[0][0]
+        success_msg = f"AP nao existe, id solicitacao: {id_solicitacao}, numero da nota: {numero_nota}, tipo da nota: {tipo_nota}"
+        
+        base_url = f"https://api.telegram.org/bot{token}/sendMessage"
+
+        for chat_id in chat_ids:
+            payload = {
+                'chat_id': chat_id,
+                'text': success_msg
+            }
+            response = requests.post(base_url, data=payload)
+            if response.status_code != 200:
+                print(f"Failed to send success message to chat_id {chat_id}. Response: {response.content}")
+            else:
+                print(f"Success message sent successfully to chat_id {chat_id} on Telegram!")
+
     def send_failure_try_message(self, id_solicitacao, numero_nota):
         chat_ids_results = database.consultar_chat_id()
         token_result = database.consultar_token_bot()
@@ -1604,7 +1628,7 @@ class NbsRpa():
         chat_ids = [result[0] for result in chat_ids_results]
 
         token = token_result[0][0]
-        success_msg = f"Tentativas excedidas, id_solicitacao: {id_solicitacao}, numero da nota: {numero_nota}"
+        success_msg = f"Solicitacao Rejeitada por erro, id_solicitacao: {id_solicitacao}, numero da nota: {numero_nota}"
         
         base_url = f"https://api.telegram.org/bot{token}/sendMessage"
 
@@ -2564,6 +2588,20 @@ class NbsRpa():
         os.remove(filepath)
         print(f"Arquivo {filepath} deletado com sucesso.")
 
+    def delete_all_files_in_directory(self, directory):
+        for filename in os.listdir(directory):
+            file_path = os.path.join(directory, filename)
+            try:
+                if os.path.isfile(file_path) or os.path.islink(file_path):
+                    os.remove(file_path)
+                    print(f"Arquivo {file_path} deletado com sucesso.")
+                elif os.path.isdir(file_path):
+                    # Se quiser também deletar diretórios, remova o comentário da próxima linha
+                    # shutil.rmtree(file_path)
+                    pass
+            except Exception as e:
+                print(f"Erro ao deletar {file_path}. Causa: {e}")
+
 
 
     def is_within_blocked_time(self):
@@ -2599,9 +2637,10 @@ class NbsRpa():
             time.sleep(2)
             database.atualizar_adtos_vencidos(id_solicitacao)
             time.sleep(3)
-            notas_fiscais = database.consultar_nota_fiscal(id_solicitacao)
+            numerodocto = row[20]
+            notas_fiscais = database.consultar_nota_fiscal(id_solicitacao, numerodocto)
             if notas_fiscais:
-                numerodocto = notas_fiscais[0][2]
+                # numerodocto = notas_fiscais[0][2]
                 serie_value = notas_fiscais[0][3]
                 data_emissao_value = notas_fiscais[0][1] 
                 tipo_docto_value = notas_fiscais[0][5]
@@ -2618,9 +2657,12 @@ class NbsRpa():
                 file.write(f"{id_solicitacao},{numerodocto}\n")
                 file.flush()
                 os.fsync(file.fileno())
-            tentativas = self.get_attempt_count(id_solicitacao, numerodocto)
-            if tentativas <= 2:
-                self.update_attempt_count(id_solicitacao, numerodocto, tentativas + 1)
+            # try:
+            # tentativas = self.get_attempt_count(id_solicitacao, numerodocto)
+            # if tentativas <= 1:
+            try:
+                # self.update_attempt_count(id_solicitacao, numerodocto, tentativas + 1)
+                # self.delete_all_files_in_directory(r"C:\Users\user\Documents\rpa_project\tentativas")
                 self.existe_xml = False
                 id_empresa = row[18]
                 tipo_pagamento_value = row[5]
@@ -2727,17 +2769,18 @@ class NbsRpa():
                     time.sleep(2)
                     self.close_aplications_half()
                     time.sleep(1)
-                    self.delete_attempt_file(id_solicitacao, numerodocto)
+                    # self.delete_all_files_in_directory(r"C:\Users\user\Documents\rpa_project\tentativas")
                     time.sleep(2)
-                    registro_existe = database.verificar_dados_cadastro(numerodocto, id_solicitacao)
+                    # registro_existe = database.verificar_dados_cadastro(numerodocto, id_solicitacao)
                     time.sleep(2)
-                    # if not registro_existe:
-                    ap_existe = rf"C:\Users\user\Documents\APs\AP_{numerodocto}{id_solicitacao}"
+                    ap_existe = rf"C:\Users\user\Documents\APs\AP_{numerodocto}{id_solicitacao}.pdf"
                     if os.path.exists(ap_existe):
                         database.atualizar_anexosolicitacaogasto(numerodocto, id_solicitacao)
-                        # if registro_existe:
-                    time.sleep(3)
-                    self.send_success_message(id_solicitacao, numerodocto, tipo_docto_value)
+                        time.sleep(3)
+                        self.send_success_message(id_solicitacao, numerodocto, tipo_docto_value)
+                    else:
+                        self.send_ap_nao_existe_message(id_solicitacao, numerodocto, tipo_docto_value)
+                        # continue
                     # except:
                     #     self.send_message_with_traceback(id_solicitacao, numerodocto)
                 else:
@@ -2745,11 +2788,14 @@ class NbsRpa():
                     database.autoriza_rpa_para_r(id_solicitacao)
                     time.sleep(2)
                     self.back_to_nbs()
-            else:
+            except Exception as e:
+                print(traceback.format_exc()) 
+                time.sleep(1)
                 database.autoriza_rpa_para_r(id_solicitacao)
                 time.sleep(2)
                 self.send_failure_try_message(id_solicitacao, numerodocto)
-                self.delete_attempt_file(id_solicitacao, numerodocto)
+                raise
+                # self.delete_all_files_in_directory(r"C:\Users\user\Documents\rpa_project\tentativas")
 
 
 
