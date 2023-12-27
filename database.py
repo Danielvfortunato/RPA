@@ -41,6 +41,7 @@ def consultar_dados_cadastro():
                 , sg.historico
                 , ep.id
                 , cl.cidade
+                , a.numerodocto as numerodocto
             FROM 
                 solicitacaoGasto sg
                 , cliente cl
@@ -63,8 +64,9 @@ def consultar_dados_cadastro():
                 AND rc.id = sg.idcontabilizacaopadrao 
                 AND nf.id = sg.idNaturezaFinanceira
                 AND autorizaRpa ='S'
-                and a.tipodoctonota in ('NFE')
-                -- and sg.id = '152318'
+                and a.tipodoctonota in ('NFS', 'NFE')
+                and numerocontrole is null 
+                -- and sg.id = 153870
                 AND (a.notacaptadarpa = 'N' or a.notacaptadarpa is null or a.notacaptadarpa = 'E')
                --  and sg.id in (149720, 150784, 151248, 151123, 151000, 151036, 151243, 151158, 151158, 151191, 151244, 151246, 151239, 150120, 150120)
             ORDER BY
@@ -128,7 +130,7 @@ def verificar_dados_cadastro(numerodocto, id_solicitacao):
         conn.close()
         return resultados
 
-def consultar_nota_fiscal(id_solicitacao):
+def consultar_nota_fiscal(id_solicitacao, numerodocto):
     conn = conectar_banco_dados()
     if conn is not None:
         cursor = conn.cursor()
@@ -148,11 +150,12 @@ def consultar_nota_fiscal(id_solicitacao):
                 anexoSolicitacaoGasto
             WHERE 
                 idSolicitacaoGasto = %s
+                and numerodocto = %s
                 AND desconsiderAranexo = 'N'
                 AND (tipo = 'DANFE' OR tipo = 'DANFE-ADTO')
                 AND (notacaptadarpa = 'N' or notacaptadarpa is null or notacaptadarpa = 'E')
             """
-        cursor.execute(consulta, (id_solicitacao,))
+        cursor.execute(consulta, (id_solicitacao, numerodocto))
         resultados = cursor.fetchall()
         cursor.close()
         conn.close()
