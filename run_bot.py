@@ -80,20 +80,27 @@ def run_script():
         process = subprocess.Popen(['python', r'C:\Users\user\Documents\rpa_Project\main.py'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = process.communicate()
 
-    if process.returncode != 0:
-        try:
-            # Open the file with 'replace' error handler to manage encoding errors
-            with open('info.txt', 'r', encoding='utf-8', errors='replace') as file:
-                line = file.readline()
-                id_solicitacao, numerodocto = line.strip().split(',')
+        if process.returncode != 0:
+            try:
+                # Open the file with 'replace' error handler to manage encoding errors
+                with open('info.txt', 'r', encoding='utf-8', errors='replace') as file:
+                    line = file.readline()
+                    id_solicitacao, numerodocto = line.strip().split(',')
 
-            error_message = (f"Erro detectado em main.py:\nID Solicitacao: {id_solicitacao}\nNumero Docto: {numerodocto}\n" +
-                             f"{stderr.decode('utf-8', errors='replace')[:500]}...")
-            screenshot = capture_screen()
-            send_message_with_screenshot(error_message, screenshot)
-        except Exception as e:
-            print(f"Erro ao ler o arquivo de informações: {e}")
+                # Decode the stderr and extract the text after "traceback"
+                stderr_decoded = stderr.decode('utf-8', errors='replace')
+                traceback_index = stderr_decoded.find('Traceback (most recent call last):')
+                if traceback_index != -1:
+                    error_details = stderr_decoded[traceback_index:traceback_index + 500]
+                else:
+                    error_details = stderr_decoded[:500]
 
+                error_message = (f"Erro detectado em main.py:\nID Solicitacao: {id_solicitacao}\nNumero Docto: {numerodocto}\n" +
+                                 f"{error_details}")
+                screenshot = capture_screen()
+                send_message_with_screenshot(error_message, screenshot)
+            except Exception as e:
+                print(f"Erro ao ler o arquivo de informações: {e}")
 
     else:
         print('main.py is already running. Doing nothing.')
@@ -102,4 +109,4 @@ def run_script():
 if __name__ == "__main__":
     while True:
         run_script()
-        time.sleep(30)
+        time.sleep(10)
