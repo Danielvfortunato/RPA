@@ -344,65 +344,66 @@ class NbsRpa():
             except TimeoutError as e:
                 print(str(e))
                 return
-            vlr_iss.type_keys(valor_value)
-            if self.xml_existe == False:
-                aliquota = self.get_aliquota(num_nf_value, id_solicitacao)
-                aliquota_img = self.extract_aliquota_from_image(num_nf_value, id_solicitacao)
-            time.sleep(3)
-            try:
-                self.wait_until_interactive(aliquota_field)
-            except TimeoutError as e:
-                print(str(e))
-                return
-            time.sleep(1)
-            aliquota_field.click_input()
-            time.sleep(1)
-            if self.xml_existe == False and self.get_aliquota_from_xml_nfs(num_nf_value, id_solicitacao) == None:
-                if aliquota != '0,00' and aliquota is not None:
-                    time.sleep(1)
-                    pyautogui.doubleClick()
-                    time.sleep(1)
-                    pyautogui.press('backspace')
-                    time.sleep(1)
-                    pyautogui.typewrite(aliquota)
-                elif aliquota is None and aliquota_img is not None:
-                    time.sleep(1)
-                    pyautogui.doubleClick()
-                    time.sleep(1)
-                    pyautogui.press('backspace')
-                    time.sleep(1)
-                    pyautogui.typewrite(aliquota_img)
-                    time.sleep(1)
-            elif (self.xml_existe == True or self.xml_existe == False) and self.get_aliquota_from_xml_nfs(num_nf_value, id_solicitacao) != None:
-                aliquota_xml = self.get_aliquota_from_xml_nfs(num_nf_value, id_solicitacao)
-                if aliquota_xml != '0,00' and aliquota_xml is not None:
-                    time.sleep(1)
-                    pyautogui.doubleClick()
-                    time.sleep(1)
-                    pyautogui.press('backspace')
-                    time.sleep(1)
-                    pyautogui.typewrite(aliquota_xml)
-            for _ in range(3):
-                pyautogui.press('tab')
+            if serie_value != 'TL':
+                vlr_iss.type_keys(valor_value)
+                if self.xml_existe == False:
+                    aliquota = self.get_aliquota(num_nf_value, id_solicitacao)
+                    aliquota_img = self.extract_aliquota_from_image(num_nf_value, id_solicitacao)
+                time.sleep(3)
+                try:
+                    self.wait_until_interactive(aliquota_field)
+                except TimeoutError as e:
+                    print(str(e))
+                    return
                 time.sleep(1)
-            if self.get_item_lista_servico_from_xml_nfs(num_nf_value, id_solicitacao) is None:
-                cod_servico = self.get_service_code(num_nf_value, id_solicitacao)
-                cod_servico_img = self.extract_service_code_from_image(num_nf_value, id_solicitacao)
-                time.sleep(2)
-                if cod_servico is not None:
-                    pyautogui.typewrite(cod_servico)
-                elif cod_servico is None and cod_servico_img is not None:
-                    pyautogui.typewrite(cod_servico_img)
-                else:
-                    cod_servico_nlp = nlp3.refine_best_match_code(num_nf_value, id_solicitacao)
-                    pyautogui.typewrite(cod_servico_nlp)
-            elif self.get_item_lista_servico_from_xml_nfs(num_nf_value, id_solicitacao) != None:
-                cod_servico_xml = self.get_item_lista_servico_from_xml_nfs(num_nf_value, id_solicitacao)
-                if cod_servico_xml:
-                    pyautogui.typewrite(cod_servico_xml)
-                else:
-                    cod_servico_nlp = nlp3.refine_best_match_code(num_nf_value, id_solicitacao)
-                    pyautogui.typewrite(cod_servico_nlp)
+                aliquota_field.click_input()
+                time.sleep(1)
+                if self.xml_existe == False and self.get_aliquota_from_xml_nfs(num_nf_value, id_solicitacao) == None:
+                    if aliquota != '0,00' and aliquota is not None:
+                        time.sleep(1)
+                        pyautogui.doubleClick()
+                        time.sleep(1)
+                        pyautogui.press('backspace')
+                        time.sleep(1)
+                        pyautogui.typewrite(aliquota)
+                    elif aliquota is None and aliquota_img is not None:
+                        time.sleep(1)
+                        pyautogui.doubleClick()
+                        time.sleep(1)
+                        pyautogui.press('backspace')
+                        time.sleep(1)
+                        pyautogui.typewrite(aliquota_img)
+                        time.sleep(1)
+                elif (self.xml_existe == True or self.xml_existe == False) and self.get_aliquota_from_xml_nfs(num_nf_value, id_solicitacao) != None:
+                    aliquota_xml = self.get_aliquota_from_xml_nfs(num_nf_value, id_solicitacao)
+                    if aliquota_xml != '0,00' and aliquota_xml is not None:
+                        time.sleep(1)
+                        pyautogui.doubleClick()
+                        time.sleep(1)
+                        pyautogui.press('backspace')
+                        time.sleep(1)
+                        pyautogui.typewrite(aliquota_xml)
+                for _ in range(3):
+                    pyautogui.press('tab')
+                    time.sleep(1)
+                if self.get_item_lista_servico_from_xml_nfs(num_nf_value, id_solicitacao) is None:
+                    cod_servico = self.get_service_code(num_nf_value, id_solicitacao)
+                    cod_servico_img = self.extract_service_code_from_image(num_nf_value, id_solicitacao)
+                    time.sleep(2)
+                    if cod_servico is not None:
+                        pyautogui.typewrite(cod_servico)
+                    elif cod_servico is None and cod_servico_img is not None:
+                        pyautogui.typewrite(cod_servico_img)
+                    else:
+                        cod_servico_nlp = nlp3.refine_best_match_code(num_nf_value, id_solicitacao)
+                        pyautogui.typewrite(cod_servico_nlp)
+                elif self.get_item_lista_servico_from_xml_nfs(num_nf_value, id_solicitacao) != None:
+                    cod_servico_xml = self.get_item_lista_servico_from_xml_nfs(num_nf_value, id_solicitacao)
+                    if cod_servico_xml:
+                        pyautogui.typewrite(cod_servico_xml)
+                    else:
+                        cod_servico_nlp = nlp3.refine_best_match_code(num_nf_value, id_solicitacao)
+                        pyautogui.typewrite(cod_servico_nlp)
             try:
                 self.wait_until_interactive(vlr_nf)
             except TimeoutError as e:
@@ -410,11 +411,19 @@ class NbsRpa():
                 return
             vlr_nf.type_keys(valor_value)
             time.sleep(1)
-            fisco_municipal.click_input()
-            for _ in range(3):
-                pyautogui.press('tab')
-                time.sleep(0.5)
-            time.sleep(1)
+            if serie_value != 'TL':
+                time.sleep(2)
+                fisco_municipal.click_input()
+                for _ in range(3):
+                    pyautogui.press('tab')
+                    time.sleep(0.5)
+                time.sleep(1)
+            elif serie_value == 'TL':
+                time.sleep(2)
+                for _ in range(5):
+                    pyautogui.press('tab')
+                    time.sleep(0.5)
+                time.sleep(1)
             texto_completo = f"{obs} Numero de solicitacao: {id_solicitacao}"
             pyautogui.typewrite(texto_completo)
             time.sleep(1)
@@ -489,54 +498,54 @@ class NbsRpa():
             if numero_serie in ('890', '891','892','893','894','895','896','897','898','899') or has_cfop_starting_with_59:
                 regime_norma.click_input()
             time.sleep(2)
-
-        natureza_financeira_list = ['ALUGUEIS A PAGAR', 'COMBUSTIVEIS/ LUBRIFICANTES', 'CUSTO COMBUSTIVEL NOVOS', 'CUSTO DESPACHANTE NOVOS', 'CUSTO FRETE NOVOS', 'CUSTO NOVOS', 'CUSTO OFICINA', 'DESP DESPACHANTE NOVOS', 'DESP FRETE VEIC NOVOS', 'DESP. COM SERVICOS DE OFICINA', 'DESPESA COM LAVACAO', 'DESPESA OFICINA', 'ENERGIA ELETRICA', 'FRETE', 'HONORARIO PESSOA JURIDICA', 'INFORMATICA HARDWARE', 'INFORMATICA SOFTWARE', 'INTERNET', 'MANUT. E CONSERV. DE', 'MATERIAL DE OFICINA DESPESA', 'PONTO ELETRONICO RA', 'SALARIO ERIBERTO', 'SALARIO MAGU', 'SALARIO VIVIANE', 'SALARIOS RA', 'SERVICO DE TERCEIROS FUNILARIA', 'SERVICOS DE TERCEIRO OFICINA', 'SOFTWARE', 'VALE TRANSPORTE RA', 'VD SALARIO', 'VD VEICULOS NOVOS', 'VIAGENS E ESTADIAS', 'AÇÕES EXTERNAS', 'AÇÕES LOJA', 'ADESIVOS', 'AGENCIA', 'BRINDES E CORTESIAS', 'DECORAÇÃO', 'DESENSOLVIMENTO SITE', 'DESP MKT CHERY FLORIPA', 'DISPARO SMS/WHATS', 'EVENTOS', 'EXPOSITORES', 'FACEBOOK', 'FACEBOOK/INSTAGRAM', 'FEE MENSAL', 'FEIRA/EVENTOS', 'OUTROS EVENTOS', 'OUTROS (MKT)', 'FEIRAO', 'FOLLOWISE (MKT)', 'GOOGLE', 'INFLUENCIADORES', 'INSTITUCIONAL', 'INTEGRADOR (MKT)', 'JORNAL', 'LANCAMENTOS', 'LED', 'MARKETING', 'MERCADO LIVRE', 'MIDIA ON OUTROS', 'MIDIA/ONLINE', 'MKT', 'OUTDOOR', 'PANFLETOS', 'PATROCINIO', 'PORTAL GERACAO', 'PROSPECÇÃO', 'PUBLICIDADE E PROPAGANDA', 'RADIO', 'RD (MKT)', 'REGISTRO SITE', 'SISTEMAS (MKT)', 'SYONET AUTOMOVEIS', 'TELEVISAO', 'VENDAS EXTERNAS', 'VIDEOS', 'VITRINE', 'WISE (MKT)']
-        if not any(r[0] == "2" for r in rateios) and not any(r[0] == "2" for r in rateios_aut):
-            # print('nao existe centro custo 2')
-            if natureza_financeira_value in natureza_financeira_list:
-                time.sleep(2)
-                check_pis_cofins = janela.child_window(class_name="TCheckBox", found_index=0)
-                try:
-                    self.wait_until_interactive(check_pis_cofins)
-                except TimeoutError as e:
-                    print(str(e))
-                    return
-                time.sleep(3)
-                check_pis_cofins.click_input()
-                # time.sleep(2)
-                time.sleep(2)
-                tab_natureza_credito = janela.child_window(title='Natureza Créditos Pis/Cofins', control_type='TabItem')
-                try:
-                    self.wait_until_interactive(tab_natureza_credito)
-                except TimeoutError as e:
-                    print(str(e))
-                    return
-                tab_natureza_credito.click_input()
-                time.sleep(1)
-                if tipo_docto_value == 'NFE':
-                    nat_text_nfe = janela.child_window(class_name='TwwDBLookupCombo', found_index=1)
+        if serie_value != 'TL':
+            natureza_financeira_list = ['ALUGUEIS A PAGAR', 'COMBUSTIVEIS/ LUBRIFICANTES', 'CUSTO COMBUSTIVEL NOVOS', 'CUSTO DESPACHANTE NOVOS', 'CUSTO FRETE NOVOS', 'CUSTO NOVOS', 'CUSTO OFICINA', 'DESP DESPACHANTE NOVOS', 'DESP FRETE VEIC NOVOS', 'DESP. COM SERVICOS DE OFICINA', 'DESPESA COM LAVACAO', 'DESPESA OFICINA', 'ENERGIA ELETRICA', 'FRETE', 'HONORARIO PESSOA JURIDICA', 'INFORMATICA HARDWARE', 'INFORMATICA SOFTWARE', 'INTERNET', 'MANUT. E CONSERV. DE', 'MATERIAL DE OFICINA DESPESA', 'PONTO ELETRONICO RA', 'SALARIO ERIBERTO', 'SALARIO MAGU', 'SALARIO VIVIANE', 'SALARIOS RA', 'SERVICO DE TERCEIROS FUNILARIA', 'SERVICOS DE TERCEIRO OFICINA', 'SOFTWARE', 'VALE TRANSPORTE RA', 'VD SALARIO', 'VD VEICULOS NOVOS', 'VIAGENS E ESTADIAS', 'AÇÕES EXTERNAS', 'AÇÕES LOJA', 'ADESIVOS', 'AGENCIA', 'BRINDES E CORTESIAS', 'DECORAÇÃO', 'DESENSOLVIMENTO SITE', 'DESP MKT CHERY FLORIPA', 'DISPARO SMS/WHATS', 'EVENTOS', 'EXPOSITORES', 'FACEBOOK', 'FACEBOOK/INSTAGRAM', 'FEE MENSAL', 'FEIRA/EVENTOS', 'OUTROS EVENTOS', 'OUTROS (MKT)', 'FEIRAO', 'FOLLOWISE (MKT)', 'GOOGLE', 'INFLUENCIADORES', 'INSTITUCIONAL', 'INTEGRADOR (MKT)', 'JORNAL', 'LANCAMENTOS', 'LED', 'MARKETING', 'MERCADO LIVRE', 'MIDIA ON OUTROS', 'MIDIA/ONLINE', 'MKT', 'OUTDOOR', 'PANFLETOS', 'PATROCINIO', 'PORTAL GERACAO', 'PROSPECÇÃO', 'PUBLICIDADE E PROPAGANDA', 'RADIO', 'RD (MKT)', 'REGISTRO SITE', 'SISTEMAS (MKT)', 'SYONET AUTOMOVEIS', 'TELEVISAO', 'VENDAS EXTERNAS', 'VIDEOS', 'VITRINE', 'WISE (MKT)']
+            if not any(r[0] == "2" for r in rateios) and not any(r[0] == "2" for r in rateios_aut):
+                # print('nao existe centro custo 2')
+                if natureza_financeira_value in natureza_financeira_list:
+                    time.sleep(2)
+                    check_pis_cofins = janela.child_window(class_name="TCheckBox", found_index=0)
                     try:
-                        self.wait_until_interactive(nat_text_nfe)
+                        self.wait_until_interactive(check_pis_cofins)
                     except TimeoutError as e:
                         print(str(e))
                         return
-                    nat_text_nfe.click_input()
-                    time.sleep(1)
-                    pyautogui.typewrite('Aquisicao de bens utilizados como insumo')
+                    time.sleep(3)
+                    check_pis_cofins.click_input()
+                    # time.sleep(2)
                     time.sleep(2)
-                    pyautogui.press('tab')
-                elif tipo_docto_value == 'NFS':
-                    nat_text_nfs = janela.child_window(class_name='TwwDBLookupCombo', found_index=0)
+                    tab_natureza_credito = janela.child_window(title='Natureza Créditos Pis/Cofins', control_type='TabItem')
                     try:
-                        self.wait_until_interactive(nat_text_nfs)
+                        self.wait_until_interactive(tab_natureza_credito)
                     except TimeoutError as e:
                         print(str(e))
                         return
-                    nat_text_nfs.click_input()
+                    tab_natureza_credito.click_input()
                     time.sleep(1)
-                    pyautogui.typewrite('Aquisicao de servicos utilizados como insumo')
-                    time.sleep(2)
-                    pyautogui.press('tab')
+                    if tipo_docto_value == 'NFE':
+                        nat_text_nfe = janela.child_window(class_name='TwwDBLookupCombo', found_index=1)
+                        try:
+                            self.wait_until_interactive(nat_text_nfe)
+                        except TimeoutError as e:
+                            print(str(e))
+                            return
+                        nat_text_nfe.click_input()
+                        time.sleep(1)
+                        pyautogui.typewrite('Aquisicao de bens utilizados como insumo')
+                        time.sleep(2)
+                        pyautogui.press('tab')
+                    elif tipo_docto_value == 'NFS':
+                        nat_text_nfs = janela.child_window(class_name='TwwDBLookupCombo', found_index=0)
+                        try:
+                            self.wait_until_interactive(nat_text_nfs)
+                        except TimeoutError as e:
+                            print(str(e))
+                            return
+                        nat_text_nfs.click_input()
+                        time.sleep(1)
+                        pyautogui.typewrite('Aquisicao de servicos utilizados como insumo')
+                        time.sleep(2)
+                        pyautogui.press('tab')
         if tipo_docto_value == 'NFS':
             time.sleep(2)
             modelo_fiscal = janela.child_window(title='Modelo Fiscal / Chave e Outros')
@@ -561,10 +570,12 @@ class NbsRpa():
                 if chave_nfse_value is not None:
                     pyautogui.typewrite(chave_nfse_value)
                 else:
-                    pyautogui.typewrite(chave_nfse_sp_tesseract)
+                    if chave_nfse_sp_tesseract is not None:
+                        pyautogui.typewrite(chave_nfse_sp_tesseract)
             else:
                 chave_nfs_value_xml = self.get_verification_code_from_xml_nfs(num_nf_value, id_solicitacao)
-                pyautogui.typewrite(chave_nfs_value_xml)
+                if chave_nfs_value_xml:
+                    pyautogui.typewrite(chave_nfs_value_xml)
 
         time.sleep(3)
         if tipo_docto_value == 'NFE':
@@ -1500,9 +1511,9 @@ class NbsRpa():
         # if tipo_docto == 'NFE':
         #     if not chave_acesso and self.xml_existe == False:
         #         return False, "chave de acesso de produto não encontrada"
-        if tipo_docto == 'NFS':
-            if not cod_nfse and self.xml_existe == False:
-                return False, "chave de acesso de servico não encontrada"
+        # if tipo_docto == 'NFS':
+        #     if not cod_nfse and self.xml_existe == False:
+        #         return False, "chave de acesso de servico não encontrada"
         # if tipo_pagamento == 'B':
         #     for boleto in boletos:
         #         converted_boleto_date = self.convert_to_date(boleto[0])
@@ -1512,14 +1523,14 @@ class NbsRpa():
         # elif tipo_pagamento != 'B':
         #     if converted_vencimento < current_date:
         #         return False, "vencimento menor que data de efetivacao"
-        if inss:
-            return False, "inss encontrado"
-        if irff:
-            return False, "irff encontrado"
-        if iss_value:
-            return False, "iss encontrado"
-        if piscofinscsl:
-            return False, "piscofinscsl encontrado"
+        # if inss:
+        #     return False, "inss encontrado"
+        # if irff:
+        #     return False, "irff encontrado"
+        # if iss_value:
+        #     return False, "iss encontrado"
+        # if piscofinscsl:
+        #     return False, "piscofinscsl encontrado"
         if tipo_pagamento not in ('B', 'A', 'P', 'D', 'E', 'C', 'O'):
             return False, "tipo de pagamento diferente do configurado"
         if os != '':
@@ -1528,7 +1539,26 @@ class NbsRpa():
         
         
         return True, "Condições aceitas"
+
+    def check_cod_nfs(self, tipo_docto, cod_nfse):
+        if tipo_docto == 'NFS':
+            if not cod_nfse and self.xml_existe == False:
+                return False
+                    
+        return True
         
+    def check_tribut(self, inss, irff, piscofinscsl, iss_value):
+        if inss:
+            return False
+        if irff:
+            return False
+        if iss_value:
+            return False
+        if piscofinscsl:
+            return False
+        
+        return True
+
     def send_message_pre_verification(self, msg, id_solicitacao, numerodocto):
         chat_ids_results = database.consultar_chat_id()
         token_result = database.consultar_token_bot()
@@ -1583,6 +1613,102 @@ class NbsRpa():
 
         token = token_result[0][0]
         success_msg = f"Lançamento efetuado com sucesso, id solicitacao: {id_solicitacao}, numero da nota: {numero_nota}, tipo da nota: {tipo_nota}"
+        
+        base_url = f"https://api.telegram.org/bot{token}/sendMessage"
+
+        for chat_id in chat_ids:
+            payload = {
+                'chat_id': chat_id,
+                'text': success_msg
+            }
+            response = requests.post(base_url, data=payload)
+            if response.status_code != 200:
+                print(f"Failed to send success message to chat_id {chat_id}. Response: {response.content}")
+            else:
+                print(f"Success message sent successfully to chat_id {chat_id} on Telegram!")
+
+    def send_success_message_telecomunication(self, id_solicitacao, numero_nota, tipo_nota):
+        chat_ids_results = database.consultar_chat_id()
+        token_result = database.consultar_token_bot()
+
+        # chat_id1, chat_id2 = chat_ids_results[0][0], chat_ids_results[1][0]
+        # chat_ids = [chat_id1, chat_id2]
+        chat_ids = [result[0] for result in chat_ids_results]
+
+        token = token_result[0][0]
+        success_msg = f"Lançamento efetuado com sucesso, id solicitacao: {id_solicitacao}, numero da nota: {numero_nota}, tipo da nota: {tipo_nota}, obs: Telecomunicacao"
+        
+        base_url = f"https://api.telegram.org/bot{token}/sendMessage"
+
+        for chat_id in chat_ids:
+            payload = {
+                'chat_id': chat_id,
+                'text': success_msg
+            }
+            response = requests.post(base_url, data=payload)
+            if response.status_code != 200:
+                print(f"Failed to send success message to chat_id {chat_id}. Response: {response.content}")
+            else:
+                print(f"Success message sent successfully to chat_id {chat_id} on Telegram!")
+
+    def send_success_message_cod_nfs_exception(self, id_solicitacao, numero_nota, tipo_nota):
+        chat_ids_results = database.consultar_chat_id()
+        token_result = database.consultar_token_bot()
+
+        # chat_id1, chat_id2 = chat_ids_results[0][0], chat_ids_results[1][0]
+        # chat_ids = [chat_id1, chat_id2]
+        chat_ids = [result[0] for result in chat_ids_results]
+
+        token = token_result[0][0]
+        success_msg = f"Lançamento efetuado com sucesso, id solicitacao: {id_solicitacao}, numero da nota: {numero_nota}, tipo da nota: {tipo_nota}, obs: sem codigo de acesso de nfs"
+        
+        base_url = f"https://api.telegram.org/bot{token}/sendMessage"
+
+        for chat_id in chat_ids:
+            payload = {
+                'chat_id': chat_id,
+                'text': success_msg
+            }
+            response = requests.post(base_url, data=payload)
+            if response.status_code != 200:
+                print(f"Failed to send success message to chat_id {chat_id}. Response: {response.content}")
+            else:
+                print(f"Success message sent successfully to chat_id {chat_id} on Telegram!")
+
+    def send_success_message_cod_tribut_exceptions(self, id_solicitacao, numero_nota, tipo_nota):
+        chat_ids_results = database.consultar_chat_id()
+        token_result = database.consultar_token_bot()
+
+        # chat_id1, chat_id2 = chat_ids_results[0][0], chat_ids_results[1][0]
+        # chat_ids = [chat_id1, chat_id2]
+        chat_ids = [result[0] for result in chat_ids_results]
+
+        token = token_result[0][0]
+        success_msg = f"Lançamento efetuado com sucesso, id solicitacao: {id_solicitacao}, numero da nota: {numero_nota}, tipo da nota: {tipo_nota}, obs: retencao encontrada"
+        
+        base_url = f"https://api.telegram.org/bot{token}/sendMessage"
+
+        for chat_id in chat_ids:
+            payload = {
+                'chat_id': chat_id,
+                'text': success_msg
+            }
+            response = requests.post(base_url, data=payload)
+            if response.status_code != 200:
+                print(f"Failed to send success message to chat_id {chat_id}. Response: {response.content}")
+            else:
+                print(f"Success message sent successfully to chat_id {chat_id} on Telegram!")
+
+    def send_success_message_cod_tribut_cod_nfs_exceptions(self, id_solicitacao, numero_nota, tipo_nota):
+        chat_ids_results = database.consultar_chat_id()
+        token_result = database.consultar_token_bot()
+
+        # chat_id1, chat_id2 = chat_ids_results[0][0], chat_ids_results[1][0]
+        # chat_ids = [chat_id1, chat_id2]
+        chat_ids = [result[0] for result in chat_ids_results]
+
+        token = token_result[0][0]
+        success_msg = f"Lançamento efetuado com sucesso, id solicitacao: {id_solicitacao}, numero da nota: {numero_nota}, tipo da nota: {tipo_nota}, obs: retencao encontrada e chave de acesso de servico nao encontrado"
         
         base_url = f"https://api.telegram.org/bot{token}/sendMessage"
 
@@ -2777,7 +2903,16 @@ class NbsRpa():
                     if os.path.exists(ap_existe):
                         database.atualizar_anexosolicitacaogasto(numerodocto, id_solicitacao)
                         time.sleep(3)
-                        self.send_success_message(id_solicitacao, numerodocto, tipo_docto_value)
+                        if not self.check_cod_nfs(tipo_docto_value, cod_nfse) and serie_value not in ('TL'):
+                            self.send_success_message_cod_nfs_exception(id_solicitacao, numerodocto, tipo_docto_value)
+                        elif not self.check_tribut(inss, irff, piscofinscsl, iss) and serie_value not in ('TL'):
+                            self.send_success_message_cod_tribut_exceptions(id_solicitacao, numerodocto, tipo_docto_value)
+                        elif not self.check_tribut(inss, irff, piscofinscsl, iss) and not self.check_cod_nfs(tipo_docto_value, cod_nfse) and serie_value not in ('TL'):
+                            self.send_success_message_cod_tribut_cod_nfs_exceptions(id_solicitacao, numerodocto, tipo_docto_value)
+                        elif serie_value in ('TL'):
+                            self.send_success_message_telecomunication(id_solicitacao, numerodocto, tipo_docto_value)
+                        else:
+                            self.send_success_message(id_solicitacao, numerodocto, tipo_docto_value)
                     else:
                         self.send_ap_nao_existe_message(id_solicitacao, numerodocto, tipo_docto_value)
                         # continue
