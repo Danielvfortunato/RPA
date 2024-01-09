@@ -58,17 +58,12 @@ def consultar_dados_cadastro():
                 AND a.desconsiderAranexo = 'N'
                 AND (a.tipo = 'DANFE' OR a.tipo = 'DANFE-ADTO')
                 AND ep.id = sg.idEmpresa
-                -- AND ep.idsegmento = 2
                 AND sg.formapagamento <> 'Caixa Usado'
---                AND sg.formapagamento  = 'B'
                 AND rc.id = sg.idcontabilizacaopadrao 
                 AND nf.id = sg.idNaturezaFinanceira
                 AND autorizaRpa ='S'
-                and a.tipodoctonota in ('NFS', 'NFE')
                 and numerocontrole is null 
-                -- and sg.id = 153870
                 AND (a.notacaptadarpa = 'N' or a.notacaptadarpa is null or a.notacaptadarpa = 'E')
-               --  and sg.id in (149720, 150784, 151248, 151123, 151000, 151036, 151243, 151158, 151158, 151191, 151244, 151246, 151239, 150120, 150120)
             ORDER BY
 				CASE 
 	                WHEN sg.formapagamento = 'B' THEN (select datavencimento from anexosolicitacaogasto where desconsiderAranexo = 'N' AND tipo = 'Boleto' AND (notacaptadarpa = 'N' or notacaptadarpa is null or notacaptadarpa = 'E') and idSolicitacaoGasto = sg.id limit 1)
