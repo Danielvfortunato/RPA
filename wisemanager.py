@@ -156,7 +156,9 @@ class Wise():
         
         file_name = janela.child_window(class_name="Edit")
         time.sleep(2)
-        file_name.type_keys(f"AP_{numero_docto}{id_solicitacao}.PDF")
+        self.type_slowly(file_name, f"AP_{numero_docto}{id_solicitacao}.PDF")
+        # file_name.type_keys(f"AP_{numero_docto}{id_solicitacao}.PDF")
+        time.sleep(1)
         file_name.type_keys("{ENTER}")
 
     def confirm(self):
