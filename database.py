@@ -63,6 +63,7 @@ def consultar_dados_cadastro():
                 AND nf.id = sg.idNaturezaFinanceira
                 AND autorizaRpa ='S'
                 and numerocontrole is null 
+                -- and sg.id = '155356'
                 AND (a.notacaptadarpa = 'N' or a.notacaptadarpa is null or a.notacaptadarpa = 'E')
             ORDER BY
 				CASE 
