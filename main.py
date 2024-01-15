@@ -849,8 +849,9 @@ class NbsRpa():
                 else:  # Se for o último item, ajuste para o total da nota
                     valor = valor_total_decimal - valor_already_added
 
-                valor_str = str(valor).replace('.', ',')
+                # valor_str = str(valor).replace('.', ',')
                 valor = Decimal(valor).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+                valor_str = str(valor).replace('.',',')
                 self.execute_rpa_actions(mapped_value, valor_str)
 
         ##### se for nota fiscal de produto
